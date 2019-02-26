@@ -1,0 +1,73 @@
+CAPI=2:
+
+name : ::or1k_marocchino:5.0-r3
+#description : or1k_marocchino - Tomasulo algorithm based OpenRISC processor IP core
+
+filesets:
+  core:
+    files:
+      - rtl/verilog/or1k_defines.v : {is_include_file : true}
+      - rtl/verilog/or1k_sprs.v : {is_include_file : true}
+      - rtl/verilog/or1k_utils.vh : {is_include_file : true}
+      - rtl/verilog/or1k_cfgrs.v
+      - rtl/verilog/or1k_dpram_en_w1st.v
+      - rtl/verilog/or1k_spram_en_w1st.v
+      - rtl/verilog/or1k_marocchino_bus_if_wb32.v
+      - rtl/verilog/or1k_marocchino_ocb.v
+      - rtl/verilog/or1k_marocchino_oman.v
+      - rtl/verilog/or1k_marocchino_cache_lru.v
+      - rtl/verilog/or1k_marocchino_icache.v
+      - rtl/verilog/or1k_marocchino_immu.v
+      - rtl/verilog/or1k_marocchino_fetch.v
+      - rtl/verilog/or1k_marocchino_dcache.v
+      - rtl/verilog/or1k_marocchino_dmmu.v
+      - rtl/verilog/or1k_marocchino_lsu.v
+      - rtl/verilog/or1k_marocchino_decode.v
+      - rtl/verilog/or1k_marocchino_execute.v
+      - rtl/verilog/or1k_marocchino_rf.v
+      - rtl/verilog/or1k_marocchino_ctrl.v
+      - rtl/verilog/or1k_marocchino_pic.v
+      - rtl/verilog/or1k_marocchino_ticktimer.v
+      - rtl/verilog/or1k_marocchino_cpu.v
+      - rtl/verilog/or1k_marocchino_top.v
+    file_type : verilogSource
+
+  fpu_marocchino:
+    files:
+      - rtl/verilog/pfpu_marocchino/pfpu_marocchino_cmp.v
+      - rtl/verilog/pfpu_marocchino/pfpu_marocchino_addsub.v
+      - rtl/verilog/pfpu_marocchino/pfpu_marocchino_f2i.v
+      - rtl/verilog/pfpu_marocchino/pfpu_marocchino_i2f.v
+      - rtl/verilog/pfpu_marocchino/pfpu_marocchino_mul.v
+      - rtl/verilog/pfpu_marocchino/pfpu_marocchino_div.v
+      - rtl/verilog/pfpu_marocchino/pfpu_marocchino_muldiv.v
+      - rtl/verilog/pfpu_marocchino/pfpu_marocchino_rnd.v
+      - rtl/verilog/pfpu_marocchino/pfpu_marocchino_top.v
+    file_type : verilogSource
+
+  monitor:
+    files : [bench/verilog/mor1kx_monitor.v]
+    file_type : verilogSource
+
+parameters:
+  trace_enable:
+    datatype    : bool
+    description : Enable instruction trace
+    paramtype   : plusarg
+
+  trace_to_screen:
+    datatype    : bool
+    description : Output instruction trace to screen
+    paramtype   : plusarg
+
+targets:
+  default:
+    filesets:
+      - core
+      - fpu_marocchino
+      - "tool_icarus? (monitor)"
+      - "tool_isim? (monitor)"
+      - "tool_modelsim? (monitor)"
+      - "tool_rivierapro? (monitor)"
+      - "tool_xsim? (monitor)"
+    parameters: [trace_enable, trace_to_screen]

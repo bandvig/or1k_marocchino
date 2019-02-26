@@ -1,0 +1,195 @@
+             MAROCCHINO Pipeline Status
+
+23 June 2015
+  Initial variant of pipeline. The variant was converted from
+CAPPUCCINO by the following steps:
+  a) mor1kx_decode & mor1kx_decode_execute_cappuccino were combined
+     into one mor1kx_decode_marocchino
+  b) mor1kx_execute_alu and mor1kx_execute_ctrl_cappuccino were
+     combined into one mor1kx_execute_marocchino
+  c) LSU related operations and l.mf(t)spr processing were moved from
+     CTRL stage to EXECUTE one. So LSU & CTRL modules were modified
+     appropriately.
+  d) CTRL-stage related registers were removed
+  e) The logic for bubble generation, forwarding results, pipeline
+     control signals generation were significantly simplified
+  f) Exceptions are taken on Write-Back-stage now
+  g) Write-Back registers were extended to handle flags and exceptions
+     additionally to result
+  h) Debug unit support was damaged
+
+
+23 July 2015
+  FETCH refactored. However, the main achievement is simplification
+of logic for generation padv-* and exception processing.
+
+
+14 August 2015
+  Some improvement for fetch. As a result, we don't need "fetch_valid"
+flag to control pipeline.
+
+
+6 September 2015
+  Pipelined multiplier. Some adaptation for FPU pipelines. Move Write-Back
+latches into mor1kx_execute_marocchino to prepare implementation of
+control for paralleled execution units. So, mor1kx_wbmux_marocchino
+has been removed from design.
+
+
+6 November 2015
+  First variant with out-of-order completion and 8-taps
+Order Control Buffer (OCB).
+
+
+31 December 2015
+ The major achievement is that all modules, including LSU, DCACHE,
+Store Buffer, etc. are ready for more pipelinization. All RAM blocks are
+replaced with ones containing "enable" signal. And Read/Write conflict
+resolving is moved out from RAM modules. Both of these modifications are
+essential steps toward design of pipeline control logic for each
+pipelined module.
+
+
+5 March 2016
+ (a) Restore LSU pipelinization
+ (b) Remove last stage of FETCH to improve performance
+ (c) Branch prediction is replaced by branch forwarding from EXECUTE
+(in fact most of instructions those affect flag are 1-clock length, so
+flag is usually computed by EXECUTE while FETCH is fetching delay slot)
+ (d) CoreMark 109 Iterations/sec, i.e. 109/50 = 2.18 CoreMark/MHz
+
+
+7 August 2016
+ (a) Make FEATURE_PIC and FEATURE_TIMER "enabled" permanently
+ (b) Decouple PIC and TIMER from CTRL
+ (c) Re-Factoring SPR bus to make all modules data outputs registered
+ (d) DU updated to be compliant to MAROCCHINO pipeline, but not
+     verified because I have not got a JTAG dongle
+ (e) Multi-cycle execution units (MUL, DIV and FP32-arithmetic) were
+     moved out of mor1kx_excecute_maroccchino module. The rest part of
+     mor1kx_excecute_maroccchino were re-named to
+     mor1kx_exec_1clk_marocchino
+ (f) Write-Back- registers in all execution modules were re-designed to make
+     exception processing more straight
+
+
+1 October 2016
+ (a) Initial implementation of simple two-stages reservation stations
+ (b) Improvement for FPU-32 stages controls to achieve higher
+     pipelinization
+
+
+12 October 2016
+  Tomasulo algorithm has been implemented. Simple 2-stages reservation
+stations are used.
+
+
+14 October 2016
+  SRT-4 for integer operands is implemented. Even so it doesn't improve
+CoreMark digits, I'm personally interested in faster variants of integer
+division. Further I'm going to re-use the srt4_kernel module in FPU64
+divider.
+
+
+3 December 2016
+  FEATURE_FPU has been opened
+  Combined single/double precision FPU pipes are implemented to save
+area. Obsolete single-only precision pipes has been removed from project.
+  Re-locate reservation stations from execution modules level to
+CPU level. Combine reservation stations for multiplier, divider and FPU
+into common M-clk station. Implement all data hazards resolving in
+reservation stations.
+  Massive re-naming to achieve more consistent naming system.
+
+
+14 January 2017
+  Speculative write back for LSU has been implemented. The technique
+decrease DCACHE's and DMMU's outputs participation in pipe control logic.
+In next turn it improves timing, so router is able to meet constrains easily.
+  Remove redundancy for hazards resolving in reservation stations.
+In fact extension bits are enough.
+  Corrections in hierarchy of some registers.
+  Corrections in comments to simplify source exploring.
+
+
+22 January 2017
+  DU re-factored. Tested with OpenOCD: halt, resume, load image, reg, mdw.
+The "hello" and "vmlinux" were successfully loaded and executed with Mohor's
+JTAG-TAP and Advance Debug System. Step-by-step execution not tested yet.
+
+
+05 March 2017
+  (1) pipeline_flush is register now.
+  (2) Collapse store buffer if a DBUS error occurs during write.
+  (3) Move link address computation for l.jal and l.jalr fro DECODE to ALU
+  (4) Remove FLAG and CARRY related hazards detection in DECODE and resolving
+them in 1-CLK reservation station. They were used in 1-CLK execution unit only.
+However, when 1-CLK execution unit receives access to Write-Back it means all hazards
+are resolved. So, FLAG and CARRY related hazards  were redundant.
+  (5) Parameterization of Order Control Buffer.
+  (6) More accurate EPCR update in according with exception hierarchy
+  (7) Quasi speculative jump/branch taking. There were quite complex logic
+contributing to padv_decode and stalled IFETCH if jump or branch related data
+were not available to jump or branch execution. The modification remove the
+logic from control paths (pdv_decode) and add quasi branch miss indicator in
+IFETCH's stage #1. By miss IFETCH continue jump/branch fetching attempts till
+jump/branch target/flag become ready
+  (8) More accurate tracking for NPC thanks to previous
+  (9) Remove redundant bits from SPR EVBAR, exception_pc_addr and DU SPRs
+
+
+08 March 2017
+  Restore ability to select divisor type (). The two options are
+available. "SERIAL" is equal to CAPPUCCINO's one and means
+"restoring radix-2 divisor". Any other value means .
+For clarity "SRT4" is recommended. By default "SERIAL" is selected. In fact,
+there is no difference in benchmarks (and most of applications) for both types
+of divisor.  On the other hand, "restoring radix-2 divisor" much smaller than
+"SRT radix-4 divisor".
+
+
+19 January 2019
+  (1) Now there are two different clocks: CPU clock and Wishbone clock.
+Pseudo Clock Domains Crossing (Pseudo-CDC) implemented. "Pseudo" means that
+two assumptions were made for CDC implementation: (a) CPU clock is faster or
+equal to Wishbone one (b) if CPU and Wishbone clocks are different they are
+aligned.
+  (2) To achieve faster CPU clock:
+      (a) additional stages added in IFETCH, LSU and FPU
+      (b) Fast forwarding combinatorial multiplexers were removed from
+          reservation station’s outputs
+  (3) The 100MHz of CPU clock were achieved on Atlys board with 2-ways
+I/D caches (16 kilobytes of each).
+  (4) Tick Timer and PIC implemented in Wishbone clock domain to keep
+compatibility with existing software. Their modules are renamed:
+      mor1kx_ticktimer_oneself.v -> mor1kx_ticktimer_marocchino.v
+      mor1kx_pic_oneself.v -> mor1kx_pic_marocchino.v
+  (5) Wishbone bridges are specially re-implemented to support Pseudo-CDC
+and l.lwa/l.swa.
+      mor1kx_bus_if_wb32.v -> mor1kx_bus_if_wb32_marocchino.v
+  (6) STORE BUFFER implementation changed and moved into mor1kx_ocb_marocchino.v.
+The mor1kx_store_buffer_marocchino.v source removed.
+  (7)  pfpu32_cmp_marocchino and pfpu64_cmp_marocchino were merged into single
+pfpu_cmp_marocchino module
+  (8) GSHARE branch prediction were implemented.
+  (9) l.ext* instructions implemented.
+ (10) Temporary option OPTION_ORFPX64A32_ABI implemented to select support
+either GCC9’s ABI (with {rX,rX+2} GPRs combining for 64-bit operands) or
+GCC5’s one (with {rX,rX+1} GPRs combining). To support both ABIs the GPRs
+implementation were changed from set of RAM-bocks to set of flop-flop based
+registers. To select GCC9’s ABI the option should be set to “GCC9”.
+It should be set to “GCC5” otherwise. The default value is “GCC5”.
+ (11) Snoop Invalidation implemented for DCACHE and tested with specially
+designed ram-filler module connected as master to Wishbone interconnect.
+ (12) LRU module was refactored and implemented as separate
+mor1kx_cache_lru_marocchino.v
+ (13) The “wb_” prefix or WriteBack related signals were replaced by “wrbk_”
+one to distinguish them from Wishbone related “wb_”.
+ (14) Top level is renamed from mor1kx_marocchino_alone.v to mor1kx_top_marocchino.v
+
+
+23 February 2019
+ Restore RAM-based implementation for GPRs by cost of one extra clock
+for write-back D2 (less significant word of double result). The design is compatible
+with both GCC5 and GCC9 ABIs. 100MHz for CPU clock is achievable again on
+Spartan-6 LX45.

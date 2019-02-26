@@ -1,0 +1,122 @@
+              MAROCCHINO Pipeline How To Use
+
+  The MAROCCHINO top level is:     or1k_marocchino_top.v
+
+  The example of MAROCCHINO instance for Atlys-board SoC
+(instead of mor1kx):
+
+or1k_marocchino_top
+#(
+  .FEATURE_DEBUGUNIT("ENABLED"), // ENABLED | NONE
+  // insn cache
+  .OPTION_ICACHE_BLOCK_WIDTH(5),
+  .OPTION_ICACHE_SET_WIDTH(8),
+  .OPTION_ICACHE_WAYS(4),
+  .OPTION_ICACHE_LIMIT_WIDTH(32),
+  // insn mmu
+  .OPTION_IMMU_SET_WIDTH(7),
+  .FEATURE_IMMU_HW_TLB_RELOAD("NONE"), // not implemented
+  // data cache
+  .OPTION_DCACHE_BLOCK_WIDTH(5),
+  .OPTION_DCACHE_SET_WIDTH(8),
+  .OPTION_DCACHE_WAYS(4),
+  .OPTION_DCACHE_LIMIT_WIDTH(31),
+  // data mmu
+  .OPTION_DMMU_SET_WIDTH(7),
+  .FEATURE_DMMU_HW_TLB_RELOAD("NONE"), // not implemented
+
+  .OPTION_PIC_TRIGGER("LATCHED_LEVEL"),
+
+  .IBUS_WB_TYPE("B3_REGISTERED_FEEDBACK"),
+  .DBUS_WB_TYPE("B3_REGISTERED_FEEDBACK"),
+
+  .OPTION_RESET_PC(32'hf0000100)
+)
+u_or1k_marocchino
+(
+  // Wishbone-domain: clock and reset
+  .wb_clk       (wb_clk),
+  .wb_rst       (wb_rst),
+  // CPU-domain: clock and reset
+  .cpu_clk      (cpu_clk), // could be the same to wb_clk
+  .cpu_rst      (cpu_rst), // could be the same to wb_rst
+
+  .iwbm_adr_o(wb_m2s_or1k_i_adr),
+  .iwbm_stb_o(wb_m2s_or1k_i_stb),
+  .iwbm_cyc_o(wb_m2s_or1k_i_cyc),
+  .iwbm_sel_o(wb_m2s_or1k_i_sel),
+  .iwbm_we_o (wb_m2s_or1k_i_we),
+  .iwbm_cti_o(wb_m2s_or1k_i_cti),
+  .iwbm_bte_o(wb_m2s_or1k_i_bte),
+  .iwbm_dat_o(wb_m2s_or1k_i_dat),
+
+  .dwbm_adr_o(wb_m2s_or1k_d_adr),
+  .dwbm_stb_o(wb_m2s_or1k_d_stb),
+  .dwbm_cyc_o(wb_m2s_or1k_d_cyc),
+  .dwbm_sel_o(wb_m2s_or1k_d_sel),
+  .dwbm_we_o (wb_m2s_or1k_d_we ),
+  .dwbm_cti_o(wb_m2s_or1k_d_cti),
+  .dwbm_bte_o(wb_m2s_or1k_d_bte),
+  .dwbm_dat_o(wb_m2s_or1k_d_dat),
+
+  .iwbm_err_i(wb_s2m_or1k_i_err),
+  .iwbm_ack_i(wb_s2m_or1k_i_ack),
+  .iwbm_dat_i(wb_s2m_or1k_i_dat),
+  .iwbm_rty_i(wb_s2m_or1k_i_rty),
+
+  .dwbm_err_i(wb_s2m_or1k_d_err),
+  .dwbm_ack_i(wb_s2m_or1k_d_ack),
+  .dwbm_dat_i(wb_s2m_or1k_d_dat),
+  .dwbm_rty_i(wb_s2m_or1k_d_rty),
+
+  .irq_i(or1k_irq),
+
+  .du_addr_i(or1k_dbg_adr_i[15:0]),
+  .du_stb_i(or1k_dbg_stb_i),
+  .du_dat_i(or1k_dbg_dat_i),
+  .du_we_i(or1k_dbg_we_i),
+  .du_dat_o(or1k_dbg_dat_o),
+  .du_ack_o(or1k_dbg_ack_o),
+  .du_stall_i(or1k_dbg_stall_i),
+  .du_stall_o(or1k_dbg_bp_o),
+
+  .multicore_coreid_i(0),
+  .multicore_numcores_i(1),
+  .snoop_adr_i(0),
+  .snoop_en_i(1'b0)
+);
+
+  The following files should be included into project:
+
+ your_path/or1k_marocchino/rtl/verilog/or1k_spram_en_w1st.v
+ your_path/or1k_marocchino/rtl/verilog/or1k_dpram_en_w1st.v
+ your_path/or1k_marocchino/rtl/verilog/or1k_cfgrs.v
+ your_path/or1k_marocchino/rtl/verilog/or1k_marocchino_ocb.v
+ your_path/or1k_marocchino/rtl/verilog/or1k_marocchino_oman.v
+ your_path/or1k_marocchino/rtl/verilog/pfpu_marocchino/pfpu_marocchino_cmp.v
+ your_path/or1k_marocchino/rtl/verilog/pfpu_marocchino/pfpu_marocchino_addsub.v
+ your_path/or1k_marocchino/rtl/verilog/pfpu_marocchino/pfpu_marocchino_f2i.v
+ your_path/or1k_marocchino/rtl/verilog/pfpu_marocchino/pfpu_marocchino_i2f.v
+ your_path/or1k_marocchino/rtl/verilog/pfpu_marocchino/pfpu_marocchino_mul.v
+ your_path/or1k_marocchino/rtl/verilog/pfpu_marocchino/pfpu_marocchino_div.v
+ your_path/or1k_marocchino/rtl/verilog/pfpu_marocchino/pfpu_marocchino_muldiv.v
+ your_path/or1k_marocchino/rtl/verilog/pfpu_marocchino/pfpu_marocchino_rnd.v
+ your_path/or1k_marocchino/rtl/verilog/pfpu_marocchino/pfpu_marocchino_top.v
+ your_path/or1k_marocchino/rtl/verilog/or1k_marocchino_bus_if_wb32.v
+ your_path/or1k_marocchino/rtl/verilog/or1k_marocchino_cache_lru.v
+ your_path/or1k_marocchino/rtl/verilog/or1k_marocchino_immu.v
+ your_path/or1k_marocchino/rtl/verilog/or1k_marocchino_icache.v
+ your_path/or1k_marocchino/rtl/verilog/or1k_marocchino_fetch.v
+ your_path/or1k_marocchino/rtl/verilog/or1k_marocchino_dmmu.v
+ your_path/or1k_marocchino/rtl/verilog/or1k_marocchino_dcache.v
+ your_path/or1k_marocchino/rtl/verilog/or1k_marocchino_lsu.v
+ your_path/or1k_marocchino/rtl/verilog/or1k_marocchino_pic.v
+ your_path/or1k_marocchino/rtl/verilog/or1k_marocchino_ticktimer.v
+ your_path/or1k_marocchino/rtl/verilog/or1k_marocchino_ctrl.v
+ your_path/or1k_marocchino/rtl/verilog/or1k_marocchino_decode.v
+ your_path/or1k_marocchino/rtl/verilog/or1k_marocchino_execute.v
+ your_path/or1k_marocchino/rtl/verilog/or1k_marocchino_rf.v
+ your_path/or1k_marocchino/rtl/verilog/or1k_marocchino_cpu.v
+ your_path/or1k_marocchino/rtl/verilog/or1k_marocchino_top.v
+
+  Add "your_path/or1k_marocchino/rtl/verilog" into include paths.
