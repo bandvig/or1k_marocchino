@@ -73,7 +73,7 @@ as running Linux) requires a setting different than the default value.*
 |OPTION_ICACHE_SET_WIDTH|Specify the set address width|8|`n`|see notes below|
 |OPTION_ICACHE_WAYS|Specify the number of blocks per set|2|`n`| |
 |OPTION_ICACHE_LIMIT_WIDTH|Specify the maximum address width|32|`n`| |
-|OPTION_ICACHE_CLEAR_ON_INIT|Clean up DCACHE RAM blocks at simulation start|0|0, 1|see notes below|
+|OPTION_ICACHE_CLEAR_ON_INIT|Clean up ICACHE RAM blocks at simulation start|0|0, 1|see notes below|
 
 **Note 3:** *When `OPTION_I(D)CACHE_BLOCK_WIDTH` is 5, that means cache block is 32 bytes length, i.e.
 8 of 32-bits words, i.e. bust length is 8. Analogue to that if `OPTION_I(D)CACHE_BLOCK_WIDTH` is 4,
