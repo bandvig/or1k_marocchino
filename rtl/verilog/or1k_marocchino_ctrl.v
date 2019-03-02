@@ -39,14 +39,14 @@ module or1k_marocchino_ctrl
                                           `OR1K_RESET_VECTOR,8'd0},
 
   parameter OPTION_DCACHE_BLOCK_WIDTH = 5,
-  parameter OPTION_DCACHE_SET_WIDTH   = 9,
+  parameter OPTION_DCACHE_SET_WIDTH   = 8,
   parameter OPTION_DCACHE_WAYS        = 2,
 
   parameter OPTION_DMMU_SET_WIDTH     = 6,
   parameter OPTION_DMMU_WAYS          = 1,
 
   parameter OPTION_ICACHE_BLOCK_WIDTH = 5,
-  parameter OPTION_ICACHE_SET_WIDTH   = 9,
+  parameter OPTION_ICACHE_SET_WIDTH   = 8,
   parameter OPTION_ICACHE_WAYS        = 2,
 
   parameter OPTION_IMMU_SET_WIDTH     = 6,

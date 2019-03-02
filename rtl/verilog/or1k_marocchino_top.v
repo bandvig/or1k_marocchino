@@ -36,7 +36,7 @@ module or1k_marocchino_top
 
   // data cache configuration
   parameter OPTION_DCACHE_BLOCK_WIDTH   =  5,
-  parameter OPTION_DCACHE_SET_WIDTH     =  9,
+  parameter OPTION_DCACHE_SET_WIDTH     =  8,
   parameter OPTION_DCACHE_WAYS          =  2,
   parameter OPTION_DCACHE_LIMIT_WIDTH   = 32,
   parameter OPTION_DCACHE_SNOOP         = "NONE",
@@ -54,7 +54,7 @@ module or1k_marocchino_top
 
   // istruction cache
   parameter OPTION_ICACHE_BLOCK_WIDTH   =  5,
-  parameter OPTION_ICACHE_SET_WIDTH     =  9,
+  parameter OPTION_ICACHE_SET_WIDTH     =  8,
   parameter OPTION_ICACHE_WAYS          =  2,
   parameter OPTION_ICACHE_LIMIT_WIDTH   = 32,
   parameter OPTION_ICACHE_CLEAR_ON_INIT =  0, // !!! activate for simulation only !!!
@@ -84,10 +84,7 @@ module or1k_marocchino_top
   parameter FEATURE_CSYNC              = "NONE",
 
   parameter FEATURE_MULTICORE          = "NONE",
-  parameter OPTION_RF_NUM_SHADOW_GPR   = 0,       // for multicore mostly
-
-  parameter IBUS_WB_TYPE               = "B3_REGISTERED_FEEDBACK",
-  parameter DBUS_WB_TYPE               = "B3_REGISTERED_FEEDBACK"
+  parameter OPTION_RF_NUM_SHADOW_GPR   = 0       // for multicore mostly
 )
 (
   // Wishbone clock and reset
@@ -190,7 +187,6 @@ module or1k_marocchino_top
   or1k_marocchino_bus_if_wb32
   #(
     .DRIVER_TYPE          ("I_CACHE"), // IBUS_BRIDGE
-    .BUS_IF_TYPE          (IBUS_WB_TYPE), // IBUS_BRIDGE
     .BURST_LENGTH         ((OPTION_ICACHE_BLOCK_WIDTH == 4) ? 4 : // IBUS_BRIDGE
                            (OPTION_ICACHE_BLOCK_WIDTH == 5) ? 8 : 1), // IBUS_BRIDGE
     .OPTION_DCACHE_SNOOP  ("NONE") // IBUS_BRIDGE
@@ -245,7 +241,6 @@ module or1k_marocchino_top
   or1k_marocchino_bus_if_wb32
   #(
     .DRIVER_TYPE          ("D_CACHE"), // DBUS_BRIDGE
-    .BUS_IF_TYPE          (DBUS_WB_TYPE), // DBUS_BRIDGE
     .BURST_LENGTH         ((OPTION_DCACHE_BLOCK_WIDTH == 4) ? 4 : // DBUS_BRIDGE
                            (OPTION_DCACHE_BLOCK_WIDTH == 5) ? 8 : 1), // DBUS_BRIDGE
     .OPTION_DCACHE_SNOOP  (OPTION_DCACHE_SNOOP) // DBUS_BRIDGE

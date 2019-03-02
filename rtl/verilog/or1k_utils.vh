@@ -25,9 +25,9 @@
 function integer clog2;
 input integer in;
 begin
-	in = in - 1;
-	for (clog2 = 0; in > 0; clog2=clog2+1)
-		in = in >> 1;
+  in = in - 1;
+  for (clog2 = 0; in > 0; clog2=clog2+1)
+    in = in >> 1;
 end
 endfunction
 
@@ -39,11 +39,11 @@ input integer in;
 input integer width;
 integer i;
 begin
-	ff1 = 0;
-	for (i = width-1; i >= 0; i=i-1) begin
-		if (in[i])
-			ff1 = i;
-	end
+  ff1 = 0;
+  for (i = width-1; i >= 0; i=i-1) begin
+    if (in[i])
+      ff1 = i;
+  end
 end
 endfunction
 
@@ -55,11 +55,11 @@ input integer in;
 input integer width;
 integer i;
 begin
-	fl1 = 0;
-	for (i = 0; i < width; i=i+1) begin
-		if (in[i])
-			fl1 = i;
-	end
+  fl1 = 0;
+  for (i = 0; i < width; i=i+1) begin
+    if (in[i])
+      fl1 = i;
+  end
 end
 endfunction
 
@@ -71,9 +71,9 @@ input integer in;
 input integer width;
 integer i;
 begin
-	for (i = 0; i < width; i=i+1) begin
-		reverse_bits[width-i] = in[i];
-	end
+  for (i = 0; i < width; i=i+1) begin
+    reverse_bits[width-i] = in[i];
+  end
 end
 endfunction
 
@@ -85,9 +85,9 @@ input integer in;
 input integer width;
 integer i;
 begin
-	for (i = 0; i < width; i=i+8) begin
-		reverse_bytes[(width-1)-i-:8] = in[i+:8];
-	end
+  for (i = 0; i < width; i=i+8) begin
+    reverse_bytes[(width-1)-i-:8] = in[i+:8];
+  end
 end
 endfunction
 
@@ -99,11 +99,11 @@ function integer calc_rf_addr_width;
 input integer rf_addr_width;
 input integer rf_num_shadow_gpr;
 begin
-	if (rf_num_shadow_gpr == 0)
-		calc_rf_addr_width = rf_addr_width;
-	else
-		calc_rf_addr_width = rf_addr_width
-			+ ((rf_num_shadow_gpr == 1) ? 1 : `clog2(rf_num_shadow_gpr));
+  if (rf_num_shadow_gpr == 0)
+    calc_rf_addr_width = rf_addr_width;
+  else
+    calc_rf_addr_width = rf_addr_width
+      + ((rf_num_shadow_gpr == 1) ? 1 : `clog2(rf_num_shadow_gpr));
 end
 endfunction
 

@@ -6,8 +6,7 @@
 //               with Pseudo CDC (clock domain crossing)              //
 //                                                                    //
 //    (a) Assumes 32-bit data and address.                            //
-//    (b) Only CLASSIC and B3_REGISTERED_FEEDBACK modes               //
-//        are implemented                                             //
+//    (b) Only B3_READ_BURSTING is implemented                        //
 //    (c) Pseudo CDC disclaimer:                                      //
 //        As positive edges of wb-clock and cpu-clock assumed be      //
 //        aligned, we use simplest clock domain pseudo-synchronizers. //
@@ -31,7 +30,6 @@
 module or1k_marocchino_bus_if_wb32
 #(
   parameter DRIVER_TYPE         = "D_CACHE", // D_CACHE / I_CACHE
-  parameter BUS_IF_TYPE         = "B3_REGISTERED_FEEDBACK", // CLASSIC / B3_REGISTERED_FEEDBACK
   parameter BURST_LENGTH        = 8,
   parameter OPTION_DCACHE_SNOOP = "NONE" // for multi-core
 )
@@ -82,17 +80,6 @@ module or1k_marocchino_bus_if_wb32
   input      [31:0] snoop_adr_i,
   input             snoop_en_i
 );
-
-  generate
-  if (((BUS_IF_TYPE != "CLASSIC") && (BUS_IF_TYPE != "B3_REGISTERED_FEEDBACK")) ||
-      ((DRIVER_TYPE != "D_CACHE") && (OPTION_DCACHE_SNOOP != "NONE"))) begin
-    initial begin
-      $display("ERROR: Incorrect configuration of a Wishbone bridge");
-      $finish;
-    end
-  end
-  endgenerate
-
 
   localparam [1:0] BTE_ID = (BURST_LENGTH ==  4) ? 2'b01 :
                             (BURST_LENGTH ==  8) ? 2'b10 :

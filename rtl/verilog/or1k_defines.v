@@ -212,7 +212,7 @@
 `define OR1K_OPCODE_FPU  {2'b11, 4'h2}
 // FP OPs
 // MSbit indicates FPU operation valid
-`define OR1K_FPUOP_WIDTH	8
+`define OR1K_FPUOP_WIDTH  8
 `define OR1K_FPUOP_SELECT 7:0
 // FPU unit from Usselman takes 5 cycles from decode, so 4 ex. cycles
 `define OR1K_FPUOP_CYCLES 3'd4

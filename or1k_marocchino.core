@@ -14,6 +14,7 @@ filesets:
       - rtl/verilog/or1k_spram_en_w1st.v
       - rtl/verilog/or1k_marocchino_bus_if_wb32.v
       - rtl/verilog/or1k_marocchino_ocb.v
+      - rtl/verilog/or1k_marocchino_rat_cell.v
       - rtl/verilog/or1k_marocchino_oman.v
       - rtl/verilog/or1k_marocchino_cache_lru.v
       - rtl/verilog/or1k_marocchino_icache.v
@@ -23,8 +24,11 @@ filesets:
       - rtl/verilog/or1k_marocchino_dmmu.v
       - rtl/verilog/or1k_marocchino_lsu.v
       - rtl/verilog/or1k_marocchino_decode.v
-      - rtl/verilog/or1k_marocchino_execute.v
+      - rtl/verilog/or1k_marocchino_int_1clk.v
+      - rtl/verilog/or1k_marocchino_int_div.v
+      - rtl/verilog/or1k_marocchino_int_mul.v
       - rtl/verilog/or1k_marocchino_rf.v
+      - rtl/verilog/or1k_marocchino_rsrvs.v
       - rtl/verilog/or1k_marocchino_ctrl.v
       - rtl/verilog/or1k_marocchino_pic.v
       - rtl/verilog/or1k_marocchino_ticktimer.v
