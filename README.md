@@ -52,15 +52,15 @@ as running Linux) requires a setting different than the default value.*
 
 ### Basic parameters
 
-|Parameter|Description|Default|Values|Usage?|
-|---------|-----------|-------|------|------|
+|Parameter|Description|Default|Values|Comments|
+|---------|-----------|-------|------|--------|
 |OPTION_OPERAND_WIDTH|Specify the CPU data and address widths|32|32|Do not specify value other than `32`. Actually the parametrization is incomplete.|
 |OPTION_RESET_PC|Specify the program counter upon reset|`0x100`|n| |
 
 ### Caching parameters
 
-|Parameter|Description|Default|Values|Usage?|
-|---------|-----------|-------|------|------|
+|Parameter|Description|Default|Values|Comments|
+|---------|-----------|-------|------|--------|
 |FEATURE_DATACACHE|Enable memory access data caching|`ENABLED`|`n/a`|It presences permanently|
 |OPTION_DCACHE_BLOCK_WIDTH|Specify the address width of a cache block|5|5, 4|see notes below|
 |OPTION_DCACHE_SET_WIDTH|Specify the set address width|8|`n`|see notes below|
