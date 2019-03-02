@@ -29,7 +29,7 @@ module or1k_marocchino_cpu
   parameter OPTION_ORFPX64A32_ABI       = "GCC5", // "GCC9" / "GCC5"
   // data cache
   parameter OPTION_DCACHE_BLOCK_WIDTH   = 5,
-  parameter OPTION_DCACHE_SET_WIDTH     = 9,
+  parameter OPTION_DCACHE_SET_WIDTH     = 8,
   parameter OPTION_DCACHE_WAYS          = 2,
   parameter OPTION_DCACHE_LIMIT_WIDTH   = 32,
   parameter OPTION_DCACHE_SNOOP         = "NONE",
@@ -44,7 +44,7 @@ module or1k_marocchino_cpu
   parameter OPTION_STORE_BUFFER_CLEAR_ON_INIT = 0,
   // instruction cache
   parameter OPTION_ICACHE_BLOCK_WIDTH   = 5,
-  parameter OPTION_ICACHE_SET_WIDTH     = 9,
+  parameter OPTION_ICACHE_SET_WIDTH     = 8,
   parameter OPTION_ICACHE_WAYS          = 2,
   parameter OPTION_ICACHE_LIMIT_WIDTH   = 32,
   parameter OPTION_ICACHE_CLEAR_ON_INIT = 0,
@@ -1282,7 +1282,7 @@ module or1k_marocchino_cpu
 
 
   // **** 1clk ****
-  or1k_marocchino_exec_1clk
+  or1k_marocchino_int_1clk
   #(
     .OPTION_OPERAND_WIDTH             (OPTION_OPERAND_WIDTH) // 1CLK_EXEC
   )
@@ -1458,7 +1458,7 @@ module or1k_marocchino_cpu
   // 32-bit multiplier //
   //-------------------//
 
-  or1k_marocchino_multiplier
+  or1k_marocchino_int_mul
   #(
     .OPTION_OPERAND_WIDTH             (OPTION_OPERAND_WIDTH) // MUL
   )
@@ -1494,7 +1494,7 @@ module or1k_marocchino_cpu
   wire wrbk_div_overflow_clear;
 
   // **** integer divider ****
-  or1k_marocchino_divider
+  or1k_marocchino_int_div
   #(
     .OPTION_OPERAND_WIDTH             (OPTION_OPERAND_WIDTH) // DIV
   )

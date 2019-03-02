@@ -30,7 +30,7 @@ module or1k_marocchino_dcache
 #(
   parameter OPTION_OPERAND_WIDTH        = 32,
   parameter OPTION_DCACHE_BLOCK_WIDTH   =  5,
-  parameter OPTION_DCACHE_SET_WIDTH     =  9,
+  parameter OPTION_DCACHE_SET_WIDTH     =  8,
   parameter OPTION_DCACHE_WAYS          =  2,
   parameter OPTION_DCACHE_LIMIT_WIDTH   = 32,
   parameter OPTION_DCACHE_SNOOP         = "NONE",

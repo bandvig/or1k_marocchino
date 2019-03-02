@@ -38,7 +38,7 @@ module or1k_marocchino_fetch
   parameter GSHARE_BITS_NUM             = 10,
   // cache configuration
   parameter OPTION_ICACHE_BLOCK_WIDTH   =  5,
-  parameter OPTION_ICACHE_SET_WIDTH     =  9,
+  parameter OPTION_ICACHE_SET_WIDTH     =  8,
   parameter OPTION_ICACHE_WAYS          =  2,
   parameter OPTION_ICACHE_LIMIT_WIDTH   = 32,
   parameter OPTION_ICACHE_CLEAR_ON_INIT =  0,

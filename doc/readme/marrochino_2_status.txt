@@ -193,3 +193,13 @@ one to distinguish them from Wishbone related “wb_”.
 for write-back D2 (less significant word of double result). The design is compatible
 with both GCC5 and GCC9 ABIs. 100MHz for CPU clock is achievable again on
 Spartan-6 LX45.
+
+
+26 February 2019
+  Split out MAROCCHINO sources from mor1kx tree.
+
+
+2 March 2019
+ (1) Split out some modules in separate files.
+ (2) Update Readme.md with configuration options and style guide.
+ (3) Replace TABs by SPACEs in modules inherited from mor1kx
