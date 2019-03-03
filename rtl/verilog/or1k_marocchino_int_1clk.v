@@ -22,6 +22,8 @@
 //                                                                    //
 ////////////////////////////////////////////////////////////////////////
 
+`include "or1k_defines.v"
+
 module or1k_marocchino_int_1clk
 #(
   parameter OPTION_OPERAND_WIDTH = 32
