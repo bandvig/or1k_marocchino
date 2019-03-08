@@ -286,8 +286,7 @@ module or1k_marocchino_decode
                 op_jal; // we use adder for l.jl/l.jalr to compute return address: (pc+8)
   // Adder control logic
   // Subtract when comparing to check if equal
-  wire adder_do_sub = (op_alu & (opc_alu == `OR1K_ALU_OPC_SUB)) |
-                      op_setflag;
+  wire adder_do_sub = (op_alu & (opc_alu == `OR1K_ALU_OPC_SUB));
   // Generate carry-in select
   wire adder_do_carry = (op_alu & (opc_alu == `OR1K_ALU_OPC_ADDC)) |
                         (opc_insn == `OR1K_OPCODE_ADDIC);

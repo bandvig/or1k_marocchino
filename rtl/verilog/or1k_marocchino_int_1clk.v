@@ -329,25 +329,42 @@ module or1k_marocchino_int_1clk
   //--------------------------//
   // Integer comparison logic //
   //--------------------------//
-  wire a_eq_b  = (adder_result == {EXEDW{1'b0}}); // Equal compare
-  wire a_lts_b = (adder_result_sign ^ adder_s_ovf); // Signed compare (sign != ovf)
-  wire a_ltu_b = ~adder_carryout; // Unsigned compare
+  // to prevent extra propagation SR[CY] we use separate adder
+  // for SR[F] computation
+  wire [EXEDW-1:0] sf_a1 =  exec_1clk_a1_m;
+  wire [EXEDW-1:0] sf_b1 = ~exec_1clk_b1_m;
+  wire [EXEDW-1:0] sf_d1;
+  wire             sf_sovf; // signed overflow
+  wire             sf_uovf; // unsigneg overflaw
+  // compute difference
+  assign {sf_uovf, sf_d1} = sf_a1 + sf_b1 + 1'b1;
+  // signed overflow
+  // input operands have same signs and result sign is different from them
+  assign sf_sovf = (sf_a1[EXEDW-1] == sf_b1[EXEDW-1]) & (sf_d1[EXEDW-1] ^ sf_b1[EXEDW-1]);
+  // equal
+  wire a_eq_b  = (sf_d1 == {EXEDW{1'b0}});
+  // signed compare
+  wire a_lts_b = (sf_d1[EXEDW-1] ^ sf_sovf); // (sign != ovf)
+  wire a_les_b = a_lts_b | a_eq_b;
+  // unsigned compare
+  wire a_ltu_b = ~sf_uovf;
+  wire a_leu_b = a_ltu_b | a_eq_b;
   // comb.
   reg flag_set;
-  always @(exec_opc_setflag_i or a_eq_b or a_lts_b or a_ltu_b) begin
+  always @(exec_opc_setflag_i or a_eq_b  or
+           a_lts_b or a_les_b or a_ltu_b or a_leu_b) begin
     // synthesis parallel_case
-    case(exec_opc_setflag_i)
-      `OR1K_COMP_OPC_EQ:  flag_set = a_eq_b;
-      `OR1K_COMP_OPC_NE:  flag_set = ~a_eq_b;
-      `OR1K_COMP_OPC_GTU: flag_set = ~(a_eq_b | a_ltu_b);
-      `OR1K_COMP_OPC_GTS: flag_set = ~(a_eq_b | a_lts_b);
-      `OR1K_COMP_OPC_GEU: flag_set = ~a_ltu_b;
+    case (exec_opc_setflag_i)
+      `OR1K_COMP_OPC_LES: flag_set =  a_les_b;
+      `OR1K_COMP_OPC_LTS: flag_set =  a_lts_b;
       `OR1K_COMP_OPC_GES: flag_set = ~a_lts_b;
-      `OR1K_COMP_OPC_LTU: flag_set = a_ltu_b;
-      `OR1K_COMP_OPC_LTS: flag_set = a_lts_b;
-      `OR1K_COMP_OPC_LEU: flag_set = a_eq_b | a_ltu_b;
-      `OR1K_COMP_OPC_LES: flag_set = a_eq_b | a_lts_b;
-      default:            flag_set = 1'b0;
+      `OR1K_COMP_OPC_GTS: flag_set = ~a_les_b;
+      `OR1K_COMP_OPC_LEU: flag_set =  a_leu_b;
+      `OR1K_COMP_OPC_LTU: flag_set =  a_ltu_b;
+      `OR1K_COMP_OPC_GEU: flag_set = ~a_ltu_b;
+      `OR1K_COMP_OPC_GTU: flag_set = ~a_leu_b;
+      `OR1K_COMP_OPC_NE:  flag_set = ~a_eq_b;
+      default:            flag_set =  a_eq_b; // treated as for `OR1K_COMP_OPC_EQ
     endcase
   end
   // ---
