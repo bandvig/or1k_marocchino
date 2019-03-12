@@ -486,9 +486,9 @@ module pfpu_marocchino_addsub
     (~(|s4t_nlz) | (s3o_exp13c == 13'd1)) ?
                               {6'd0,s3o_exp13c} :
       // normalization is possible
-    (s3o_exp13c >  s4t_nlz) ? {s4t_nlz,s4t_exp13c_mz} :
+    (s3o_exp13c >  {7'd0,s4t_nlz}) ? {s4t_nlz,s4t_exp13c_mz} :
       // denormalized cases
-    (s3o_exp13c == s4t_nlz) ? {s4t_nlz_m1,13'd1} :
+    (s3o_exp13c == {7'd0,s4t_nlz}) ? {s4t_nlz_m1,13'd1} :
                               {s4t_exp13c_m1[5:0],13'd1};
 
   // re-pack single precision result in LSBs for rounding
