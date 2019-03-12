@@ -2,4 +2,4 @@
 
 export PATH=$HOME/tools/bin:$PATH
 
-verilator --lint-only rtl/verilog/*.v +incdir+rtl/verilog
+verilator --lint-only rtl/verilog/*.v rtl/verilog/pfpu_marocchino/*.v +incdir+rtl/verilog
