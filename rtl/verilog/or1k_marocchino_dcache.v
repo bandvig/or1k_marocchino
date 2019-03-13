@@ -314,8 +314,8 @@ module or1k_marocchino_dcache
 
   // DCACHE "chip select" / invalidation / data output
   wire spr_dc_cs  = spr_bus_stb_r & (spr_bus_addr_r[14:11] == `OR1K_SPR_DC_BASE);
-  wire spr_dc_inv = spr_bus_we_r & ((`SPR_OFFSET(spr_bus_addr_r) == `SPR_OFFSET(`OR1K_SPR_DCBFR_ADDR)) |
-                                    (`SPR_OFFSET(spr_bus_addr_r) == `SPR_OFFSET(`OR1K_SPR_DCBIR_ADDR)));
+  wire spr_dc_inv = spr_bus_we_r & ((`SPR_OFFSET(({1'b0, spr_bus_addr_r})) == `SPR_OFFSET(`OR1K_SPR_DCBFR_ADDR)) |
+                                    (`SPR_OFFSET(({1'b0, spr_bus_addr_r})) == `SPR_OFFSET(`OR1K_SPR_DCBIR_ADDR)));
   assign spr_bus_dat_o = {OPTION_OPERAND_WIDTH{1'b0}};
 
 

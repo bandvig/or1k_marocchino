@@ -1071,8 +1071,8 @@ module or1k_marocchino_oman
   always @(posedge cpu_clk) begin
     if (padv_wrbk_i) begin
       pc_wrbk_o      <= pc_exec;
-      pc_nxt_wrbk_o  <= pc_exec + 3'd4;
-      pc_nxt2_wrbk_o <= pc_exec + 4'd8;
+      pc_nxt_wrbk_o  <= pc_exec + 32'd4;
+      pc_nxt2_wrbk_o <= pc_exec + 32'd8;
     end
   end // @clock
 

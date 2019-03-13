@@ -146,8 +146,8 @@ module or1k_marocchino_ticktimer
         // wait SPR access request
         SPR_TT_WAIT: begin
           if (spr_tt_cs) begin
-            spr_ttmr_cs_r <= (`SPR_OFFSET(spr_bus_addr_r1) == `SPR_OFFSET(`OR1K_SPR_TTMR_ADDR));
-            spr_ttcr_cs_r <= (`SPR_OFFSET(spr_bus_addr_r1) == `SPR_OFFSET(`OR1K_SPR_TTCR_ADDR));
+            spr_ttmr_cs_r <= (`SPR_OFFSET(({1'b0, spr_bus_addr_r1})) == `SPR_OFFSET(`OR1K_SPR_TTMR_ADDR));
+            spr_ttcr_cs_r <= (`SPR_OFFSET(({1'b0, spr_bus_addr_r1})) == `SPR_OFFSET(`OR1K_SPR_TTCR_ADDR));
             spr_tt_state  <= spr_bus_we_r1 ? SPR_TT_WE : SPR_TT_RE;
           end
         end

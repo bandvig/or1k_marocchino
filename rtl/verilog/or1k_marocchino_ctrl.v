@@ -416,7 +416,7 @@ module or1k_marocchino_ctrl
         default    : spr_epcr <= epcr_default;  // by default
       endcase
     end
-    else if ((`SPR_OFFSET(spr_sys_group_wadr_r) == `SPR_OFFSET(`OR1K_SPR_EPCR0_ADDR)) &
+    else if ((`SPR_OFFSET(({1'b0, spr_sys_group_wadr_r})) == `SPR_OFFSET(`OR1K_SPR_EPCR0_ADDR)) &
              spr_sys_group_we) begin
       spr_epcr <= spr_sys_group_wdat_r;
     end
@@ -448,7 +448,7 @@ module or1k_marocchino_ctrl
   always @(posedge cpu_clk) begin
     if (cpu_rst)
       spr_evbar <= {SPR_EVBAR_WIDTH{1'b0}};
-    else if ((`SPR_OFFSET(spr_sys_group_wadr_r) == `SPR_OFFSET(`OR1K_SPR_EVBAR_ADDR)) &
+    else if ((`SPR_OFFSET(({1'b0, spr_sys_group_wadr_r})) == `SPR_OFFSET(`OR1K_SPR_EVBAR_ADDR)) &
              spr_sys_group_we)
       spr_evbar <= spr_sys_group_wdat_r[(OPTION_OPERAND_WIDTH-1):SPR_EVBAR_LSB];
   end // @ clock
@@ -692,7 +692,7 @@ module or1k_marocchino_ctrl
 
   assign except_fpu_enable_o = spr_fpcsr[`OR1K_FPCSR_FPEE];
 
-  wire spr_fpcsr_we = (`SPR_OFFSET(spr_sys_group_wadr_r) == `SPR_OFFSET(`OR1K_SPR_FPCSR_ADDR)) &
+  wire spr_fpcsr_we = (`SPR_OFFSET(({1'b0, spr_sys_group_wadr_r})) == `SPR_OFFSET(`OR1K_SPR_FPCSR_ADDR)) &
                       spr_sys_group_we &  spr_sr[`OR1K_SPR_SR_SM];
 
  `ifdef OR1K_FPCSR_MASK_FLAGS
@@ -763,7 +763,7 @@ module or1k_marocchino_ctrl
       spr_sr[`OR1K_SPR_SR_OV ]  <= wrbk_except_overflow_div_i | wrbk_except_overflow_1clk_i;
       spr_sr[`OR1K_SPR_SR_DSX]  <= wrbk_delay_slot_i;
     end
-    else if ((`SPR_OFFSET(spr_sys_group_wadr_r) == `SPR_OFFSET(`OR1K_SPR_SR_ADDR)) &
+    else if ((`SPR_OFFSET(({1'b0, spr_sys_group_wadr_r})) == `SPR_OFFSET(`OR1K_SPR_SR_ADDR)) &
              spr_sys_group_we &
              spr_sr[`OR1K_SPR_SR_SM]) begin
       // from SPR bus
@@ -796,7 +796,7 @@ module or1k_marocchino_ctrl
       spr_esr <= SPR_SR_RESET_VALUE;
     else if (wrbk_an_except_i)
       spr_esr <= spr_sr; // by exceptions
-    else if ((`SPR_OFFSET(spr_sys_group_wadr_r) == `SPR_OFFSET(`OR1K_SPR_ESR0_ADDR)) &
+    else if ((`SPR_OFFSET(({1'b0, spr_sys_group_wadr_r})) == `SPR_OFFSET(`OR1K_SPR_ESR0_ADDR)) &
              spr_sys_group_we)
       spr_esr <= spr_sys_group_wdat_r[SPR_SR_WIDTH-1:0];
   end // @ clock
@@ -830,7 +830,7 @@ module or1k_marocchino_ctrl
 
 
   // NPC for SPR (write accesses implemented for Debug System only)
-  assign du_npc_we = ((`SPR_OFFSET(spr_sys_group_wadr_r) == `SPR_OFFSET(`OR1K_SPR_NPC_ADDR)) &
+  assign du_npc_we = ((`SPR_OFFSET(({1'b0, spr_sys_group_wadr_r})) == `SPR_OFFSET(`OR1K_SPR_NPC_ADDR)) &
                       spr_sys_group_we & spr_bus_wait_du_ack);
   // --- Actually it is used just to restart CPU after salling by DU ---
   always @(posedge cpu_clk) begin
@@ -1191,7 +1191,7 @@ module or1k_marocchino_ctrl
   // ---
   always @(*) begin
     // synthesis parallel_case
-    case(`SPR_OFFSET(spr_sys_group_wadr_r))
+    case(`SPR_OFFSET(({1'b0, spr_sys_group_wadr_r})))
       `SPR_OFFSET(`OR1K_SPR_VR_ADDR)      : spr_sys_group_dat = spr_vr;
       `SPR_OFFSET(`OR1K_SPR_UPR_ADDR)     : spr_sys_group_dat = spr_upr;
       `SPR_OFFSET(`OR1K_SPR_CPUCFGR_ADDR) : spr_sys_group_dat = spr_cpucfgr;
