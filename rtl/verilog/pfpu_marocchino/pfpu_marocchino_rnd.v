@@ -378,8 +378,8 @@ module pfpu_marocchino_rnd
   always @(s1t_fract2 or s0o_shl) begin
     // synthesis parallel_case
     case (s0o_shl)
-      5'd0   : s1l_sticky = |s1t_fract2;
-      5'd1   : s1l_sticky =  s1t_fract2[0];
+      6'd0   : s1l_sticky = |s1t_fract2;
+      6'd1   : s1l_sticky =  s1t_fract2[0];
       default: s1l_sticky = 1'b0;
     endcase
   end // always
