@@ -1,30 +1,39 @@
-/* ****************************************************************************
-  This Source Code Form is subject to the terms of the 
-  Open Hardware Description License, v. 1.0. If a copy 
-  of the OHDL was not distributed with this file, You 
-  can obtain one at http://juliusbaxter.net/ohdl/ohdl.txt
+////////////////////////////////////////////////////////////////////////
+//                                                                    //
+//  or1k_marocchino_monitor                                           //
+//                                                                    //
+//  Description: Trace Monitor                                        //
+//               Attaches to hooks provided in the marocchino         //
+//               pipeline wrapper and provides execution trace,       //
+//               disassembly, and l.nop instruction functions.        //
+//               This is used for testing.                            //
+//                                                                    //
+//               based on mor1kx_monitor                              //
+//                                                                    //
+////////////////////////////////////////////////////////////////////////
+//                                                                    //
+//   Copyright (C) 2012, 2013 Julius Baxter                           //
+//                            juliusbaxter@gmail.com                  //
+//                                                                    //
+//      This Source Code Form is subject to the terms of the          //
+//      Open Hardware Description License, v. 1.0. If a copy          //
+//      of the OHDL was not distributed with this file, You           //
+//      can obtain one at http://juliusbaxter.net/ohdl/ohdl.txt       //
+//                                                                    //
+////////////////////////////////////////////////////////////////////////
 
-  Description: mor1kx monitor module
- 
-  Attaches to hooks provided in the mor1kx pipeline wrapper and provides
-  execution trace, disassembly, and l.nop instruction functions.
-   
-  Copyright (C) 2012, 2013 Authors
- 
-  Author(s): Julius Baxter <juliusbaxter@gmail.com>
- 
-***************************************************************************** */
-
-/* Configure these defines to point to the mor1kx instantiation */
-`ifndef MOR1KX_INST
- `define MOR1KX_INST dut.mor1kx0
+/* Configure these defines to point to the marocchino instantiation */
+`ifndef OR1K_INST
+ `define OR1K_INST dut.gencpu.or1k_marocchino0
 `endif
 
-/* The rest of these shouldn't need changing if the wrapper hooks have been 
- set up correctly in mor1kx_cpu. */
-`ifndef CPU_WRAPPER
- `define CPU_WRAPPER `MOR1KX_INST.mor1kx_cpu
+`ifndef TEST_NAME_STRING
+ `define TEST_NAME_STRING "marocchino"
 `endif
+
+/* The rest of these shouldn't need changing if the wrapper hooks have been
+ set up correctly in or1k_marocchino_cpu. */
+`define CPU_WRAPPER `OR1K_INST.u_cpu
 `define EXECUTE_STAGE_INSN `CPU_WRAPPER.monitor_execute_insn
 `define EXECUTE_STAGE_ADV `CPU_WRAPPER.monitor_execute_advance
 `define CPU_clk `CPU_WRAPPER.monitor_clk
@@ -33,11 +42,6 @@
 `define EXECUTE_PC `CPU_WRAPPER.monitor_execute_pc
 `define GPR_GET(x) `CPU_WRAPPER.get_gpr(x)
 `define GPR_SET(x, y) `CPU_WRAPPER.set_gpr(x, y)
-
-`include "mor1kx-defines.v"
-
-// Pull in an ORPSoC-specific file
-`include "test-defines.v" // indicate if we should trace or not
 
 // OR1K ISA defines used in this file
 
@@ -50,17 +54,17 @@
 `define OR1K_SF_OP 25:21
 `define OR1K_XSYNC_OP_POS 25:21
 
-module mor1kx_monitor #(parameter LOG_DIR= "../out") ();
+module or1k_marocchino_monitor #(parameter LOG_DIR= "../out") ();
 
    // General output file descriptor
    integer    fgeneral = 0;
    integer    ftrace = 0;
    integer    insns = 0;
-   
+
    wire clk;
 
    parameter OPTION_OPERAND_WIDTH = 32;
-   
+
    reg 	TRACE_ENABLE;
    initial TRACE_ENABLE = $test$plusargs("trace_enable");
 
@@ -70,7 +74,7 @@ module mor1kx_monitor #(parameter LOG_DIR= "../out") ();
    assign clk = `CPU_clk;
 
    reg [63:0] cycle_counter = 0 ;
-   
+
    /* Log file management code */
    initial
      begin
@@ -78,34 +82,34 @@ module mor1kx_monitor #(parameter LOG_DIR= "../out") ();
 	fgeneral = $fopen({LOG_DIR,"/",`TEST_NAME_STRING,"-general.log"});
 	ftrace = $fopen({LOG_DIR,"/",`TEST_NAME_STRING,"-trace.log"});
      end
-  
+
    /* Simulation support code */
 
    reg [1:80*8] decode_insn_disas;
    reg [1:80*8] execute_insn_disas;
    reg [OPTION_OPERAND_WIDTH-1:0] decode_pc;
    reg [OPTION_OPERAND_WIDTH-1:0] execute_pc;
-   
+
    reg [`OR1K_INSN_WIDTH-1:0]      execute_insn;
    reg 				   flag_4stage;
-   
+
    always @(`EXECUTE_STAGE_INSN)
-     mor1k_insn_to_string(`EXECUTE_STAGE_INSN, execute_insn_disas);
-	  //$write("%tns: decode insn PC %08h %08h %s\n",$time, pc_decode_i, 
+     or1k_marocchino_insn_to_string(`EXECUTE_STAGE_INSN, execute_insn_disas);
+	  //$write("%tns: decode insn PC %08h %08h %s\n",$time, pc_decode_i,
           // decode_insn_i, insn_disassembled_string);
-   
+
    always @(negedge `CPU_clk) begin
-      
+
       cycle_counter = cycle_counter + 1;
-      
+
       if (`EXECUTE_STAGE_ADV)
 	begin
 	  insns = insns + 1;
 	  execute_insn = `EXECUTE_STAGE_INSN;
 
 	   if(TRACE_ENABLE)
-	     mor1k_trace_print(execute_insn, `CPU_SR, `EXECUTE_PC, `CPU_FLAG);
-	  
+	     or1k_marocchino_trace_print(execute_insn, `CPU_SR, `EXECUTE_PC, `CPU_FLAG);
+
 	  // Check instructions for simulation controls
 	  if (execute_insn == 32'h15_00_00_01)
 	    begin
@@ -135,31 +139,31 @@ module mor1kx_monitor #(parameter LOG_DIR= "../out") ();
 		$fdisplay(fgeneral, "%0t: l.nop report cycle counter: %d", $time, cycle_counter);
 		`GPR_SET(11,cycle_counter[31:0]);
 		`GPR_SET(12,cycle_counter[63:32]);
-	    end	   
+	    end
 
 	  if (execute_insn == 32'h15_00_00_0c)
 	    begin
 	       // Silent exit
 	       $finish;
-	       
+
 	    end
-	  
+
        end // if (`EXECUTE_STAGE_ADV)
    end
-   
-   task mor1k_trace_print;
+
+   task or1k_marocchino_trace_print;
       input [31:0] insn;
       input [31:0] sr;
       input [31:0] pc;
       input 	   flag;
-      
-      
+
+
       reg 	   rD_used;
       reg [4:0]    rD_num, rA_num, rB_num;
       reg [15:0]   imm_16bit;
       reg [25:0]   imm_26bit;
       reg [31:0]   signext_imm_16bit;
-      
+
       reg [1:80*8] insn_disas;
       // Actual things happening
       reg [15:0]   regimm_chars;
@@ -167,13 +171,13 @@ module mor1kx_monitor #(parameter LOG_DIR= "../out") ();
       begin
 
 	 // Get instruction info
-	 mor1kx_insn_info(insn,rA_num,rB_num,rD_num,rD_used,imm_16bit, 
+	 or1k_marocchino_insn_info(insn,rA_num,rB_num,rD_num,rD_used,imm_16bit,
 			  imm_26bit,regimm_chars);
 
 	 /* Sign-extend the 16-bit immediate to 32-bit so we can add it to other
 	  32-bit numbers and it should subtract if necessary */
 	 signext_imm_16bit = {{16{imm_16bit[15]}},imm_16bit};
-	 
+
 	 // Display useful line of stuff, like or1ksim trace
 	 if (sr[`OR1K_SPR_SR_SM] === 1'b0)
 	   begin
@@ -187,24 +191,24 @@ module mor1kx_monitor #(parameter LOG_DIR= "../out") ();
 	      if(TRACE_TO_SCREEN)
 		$write("S ");
 	   end
-	 
+
 	 // PC next
 	 $fwrite(ftrace,"%08h: ", pc);
 	 if(TRACE_TO_SCREEN)
 	   $write("%08h: ", pc);
-	 
+
 	 // Instruction raw
 	 $fwrite(ftrace,"%08h ",insn);
 	 if(TRACE_TO_SCREEN)
 	   $write("%08h ",insn);
-	 
-	 mor1k_insn_to_string(insn, insn_disas);
-	 
+
+	 or1k_marocchino_insn_to_string(insn, insn_disas);
+
 	 // Instruction, disassembled
 	 $fwrite(ftrace,"%0s", insn_disas);
 	 if(TRACE_TO_SCREEN)
 	   $write("%0s", insn_disas);
-	 
+
 	 for (regimm_chars=regimm_chars;
 	      regimm_chars < 16; regimm_chars = regimm_chars + 1)
 	   begin
@@ -212,7 +216,7 @@ module mor1kx_monitor #(parameter LOG_DIR= "../out") ();
 	      if(TRACE_TO_SCREEN)
 		$write(" ");
 	   end
-	 
+
 	 if (rD_used)
 	   begin
 	      if (insn[`OR1K_OPCODE_SELECT]===`OR1K_OPCODE_MFSPR)
@@ -230,7 +234,7 @@ module mor1kx_monitor #(parameter LOG_DIR= "../out") ();
 		     $write("r%0d",rD_num);
 		end // else: !if(insn[`OR1K_OPCODE_SELECT]===`OR1K_OPCODE_MFSPR)
 
-	      // Tab 1 more if we're a single-number register 
+	      // Tab 1 more if we're a single-number register
 	      if (rD_num < 10) begin
 		 $fwrite(ftrace,"\t\t");
 		 if(TRACE_TO_SCREEN)
@@ -241,7 +245,7 @@ module mor1kx_monitor #(parameter LOG_DIR= "../out") ();
 		 if(TRACE_TO_SCREEN)
 		   $write("\t");
 	      end
-	      
+
 	      // Finally write what ended up in the in rD
 	      $fwrite(ftrace,"= %08h  ",`GPR_GET(rD_num));
 	      if(TRACE_TO_SCREEN)
@@ -254,7 +258,7 @@ module mor1kx_monitor #(parameter LOG_DIR= "../out") ();
 	      $fwrite(ftrace,"SPR[%04x]  = %08h  ", imm_16bit, `GPR_GET(rB_num));
 	      if(TRACE_TO_SCREEN)
 		$write("SPR[%04x]  = %08h  ", imm_16bit, `GPR_GET(rB_num));
-	      
+
 	   end // if (insn[`OR1K_OPCODE_SELECT]===`OR1K_OPCODE_MTSPR)
 	 else if (insn[`OR1K_OPCODE_SELECT]>=`OR1K_OPCODE_SD &&
 		  insn[`OR1K_OPCODE_SELECT]<=`OR1K_OPCODE_SH)
@@ -283,11 +287,11 @@ module mor1kx_monitor #(parameter LOG_DIR= "../out") ();
 	 $fwrite(ftrace,"\n");
 	 if(TRACE_TO_SCREEN)
 	   $write("\n");
-	 
-      end
-   endtask // mor1k_trace_print
 
-   task mor1kx_insn_info;
+      end
+   endtask // or1k_marocchino_trace_print
+
+   task or1k_marocchino_insn_info;
       input [31:0] insn;
       output [4:0] rA_num;
       output [4:0] rB_num;
@@ -295,25 +299,25 @@ module mor1kx_monitor #(parameter LOG_DIR= "../out") ();
       output 	   rD_used;
       output [15:0] imm_16bit;
       output [25:0] imm_26bit;
-      
+
       output [7:0]  num_chars;
 
       // To count how long disassembled immediates/regs
       // are - what a pain!
       reg 	    rA_used, rB_used, imm_16bit_used,
 		    imm_26bit_used;
-      
+
       reg [5:0]     opcode;
 
       reg 	    opc_store;
-      
+
       begin
 
 	 // Register numbers (D, A and B)
 	 rD_num = insn[`OR1K_RD_POS];
-	 rA_num = insn[`OR1K_RA_POS];	 
+	 rA_num = insn[`OR1K_RA_POS];
 	 rB_num = insn[`OR1K_RB_POS];
-	 
+
 	 opcode = insn[`OR1K_OPCODE_POS];
 
 
@@ -321,7 +325,7 @@ module mor1kx_monitor #(parameter LOG_DIR= "../out") ();
 		     (opcode==`OR1K_OPCODE_SW) ||
 		     (opcode==`OR1K_OPCODE_SB) ||
 		     (opcode==`OR1K_OPCODE_SH);
-	 
+
 	 case (opcode)
 	   `OR1K_OPCODE_LWZ,
 	     `OR1K_OPCODE_LBZ,
@@ -452,7 +456,7 @@ module mor1kx_monitor #(parameter LOG_DIR= "../out") ();
 	   default:
 	     imm_26bit_used = 0;
 	 endcase
-	 
+
 	 // Extract immediate
 	 case (opcode)
 	   `OR1K_OPCODE_SW,
@@ -469,7 +473,7 @@ module mor1kx_monitor #(parameter LOG_DIR= "../out") ();
 
 	 // Extra chars (commas, brackets)
 	 case (opcode)
-/*	   
+/*
 	   `OR1K_OPCODE_J    :
 	     num_chars = 0;
 	   `OR1K_OPCODE_JAL  :
@@ -495,10 +499,10 @@ module mor1kx_monitor #(parameter LOG_DIR= "../out") ();
 	   `OR1K_OPCODE_CUST3:
 	     num_chars = 0;
 	   `OR1K_OPCODE_CUST4:
-	     num_chars = 0; 
+	     num_chars = 0;
 	   `OR1K_OPCODE_NOP  :
-	     num_chars = 0; 
- */ 
+	     num_chars = 0;
+ */
 	   `OR1K_OPCODE_MOVHI:
 	     num_chars = 1;
 	   `OR1K_OPCODE_MACI :
@@ -570,7 +574,7 @@ module mor1kx_monitor #(parameter LOG_DIR= "../out") ();
 
 	   default:
 	     num_chars = 0;
-	   
+
 	 endcase // case (opcode)
 
 
@@ -579,15 +583,15 @@ module mor1kx_monitor #(parameter LOG_DIR= "../out") ();
 	 if (rA_used)
 	   num_chars = (rA_num > 9) ? num_chars + 3 :
 		       num_chars + 2;
-	 
+
 	 if (rB_used)
 	   num_chars = (rB_num > 9) ? num_chars + 3 :
 		       num_chars + 2;
-	 
+
 	 if (rD_used)
 	   num_chars = (rD_num > 9) ? num_chars + 3 :
 		       num_chars + 2;
-	 
+
 	 if (imm_16bit_used)
 	   num_chars = num_chars + 6;
 
@@ -599,34 +603,34 @@ module mor1kx_monitor #(parameter LOG_DIR= "../out") ();
 		imm_26bit_used);
 	  */
 	 //$write("%0d\n",num_chars);
-      
+
       end
-   endtask // mor1k_insn_info
-   
-   task mor1k_insn_to_string;
+   endtask // or1k_marocchino_insn_info
+
+   task or1k_marocchino_insn_to_string;
       input [31:0] insn;
       output [80*8:1] insnstring;
 
       reg [5:0]    opcode;
-      
+
       reg [25:0]   j_imm;
 
       reg [25:0]   br_imm;
 
       reg [31:0]   rA_val, rB_val;
-      
+
       reg [3:0]    alu_op;
-      
+
       reg [5:0]    sf_op;
-      
+
       reg [5:0]    xsync_op;
-      
+
       reg [4:0]    rD_num, rA_num, rB_num;
-      
+
       reg [15:0]   imm_16bit;
-      reg [15:0]   imm_split16bit;      
-      
-      
+      reg [15:0]   imm_split16bit;
+
+
       begin
 
 	 // Instruction opcode
@@ -636,7 +640,7 @@ module mor1kx_monitor #(parameter LOG_DIR= "../out") ();
 	 br_imm = insn[`OR1K_J_BR_IMM_POS];
 	 // Register numbers (D, A and B)
 	 rD_num = insn[`OR1K_RD_POS];
-	 rA_num = insn[`OR1K_RA_POS];	 
+	 rA_num = insn[`OR1K_RA_POS];
 	 rB_num = insn[`OR1K_RB_POS];
 	 // Bottom 16 bits when used as immediates in various instructions
 	 imm_16bit = insn[15:0];
@@ -650,16 +654,16 @@ module mor1kx_monitor #(parameter LOG_DIR= "../out") ();
 
 	 // Set flag op
 	 sf_op = insn[`OR1K_SF_OP];
-	 
+
 	 // Xsync/syscall/trap opcode
 	 xsync_op = insn[`OR1K_XSYNC_OP_POS];
-	 
+
 	 case (opcode)
 	   `OR1K_OPCODE_J:
-	     begin	      
-		$sformat(insnstring, "l.j     0x%07h", j_imm);	      
+	     begin
+		$sformat(insnstring, "l.j     0x%07h", j_imm);
 	     end
-	   
+
 	   `OR1K_OPCODE_JAL:
 	     begin
 		$sformat(insnstring, "l.jal   0x%07h", j_imm);
@@ -669,77 +673,77 @@ module mor1kx_monitor #(parameter LOG_DIR= "../out") ();
 	     begin
 		$sformat(insnstring, "l.bnf   0x%07h", br_imm);
 	     end
-	   
+
 	   `OR1K_OPCODE_BF:
 	     begin
 		$sformat(insnstring, "l.bf    0x%07h", br_imm);
 	     end
-	   
+
 	   `OR1K_OPCODE_RFE:
 	     begin
-		$sformat(insnstring, "l.rfe   ");	      
+		$sformat(insnstring, "l.rfe   ");
 	     end
-	   
+
 	   `OR1K_OPCODE_JR:
 	     begin
 		$sformat(insnstring, "l.jr    r%0d",rB_num);
 	     end
-	   
+
 	   `OR1K_OPCODE_JALR:
 	     begin
 		$sformat(insnstring, "l.jalr  r%0d",rB_num);
 	     end
-	   
+
 	   `OR1K_OPCODE_LWZ:
 	     begin
 		$sformat(insnstring, "l.lwz   r%0d,0x%04h(r%0d)",rD_num,imm_16bit,rA_num);
 	     end
-	   
+
 	   `OR1K_OPCODE_LBZ:
 	     begin
 		$sformat(insnstring, "l.lbz   r%0d,0x%04h(r%0d)",rD_num,imm_16bit,rA_num);
 	     end
-	   
+
 	   `OR1K_OPCODE_LBS:
 	     begin
 		$sformat(insnstring, "l.lbs   r%0d,0x%04h(r%0d)",rD_num,imm_16bit,rA_num);
 	     end
-	   
+
 	   `OR1K_OPCODE_LHZ:
 	     begin
 		$sformat(insnstring, "l.lhz   r%0d,0x%04h(r%0d)",rD_num,imm_16bit,rA_num);
 	     end
-	   
+
 	   `OR1K_OPCODE_LHS:
 	     begin
 		$sformat(insnstring, "l.lhs   r%0d,0x%04h(r%0d)",rD_num,imm_16bit,rA_num);
 	     end
-	   
+
 	   `OR1K_OPCODE_SW:
 	     begin
 		$sformat(insnstring, "l.sw    0x%04h(r%0d),r%0d",imm_split16bit,rA_num,rB_num);
 	     end
-	   
+
 	   `OR1K_OPCODE_SB:
 	     begin
 		$sformat(insnstring, "l.sb    0x%04h(r%0d),r%0d",imm_split16bit,rA_num,rB_num);
 	     end
-	   
+
 	   `OR1K_OPCODE_SH:
 	     begin
-		$sformat(insnstring, "l.sh    0x%04h(r%0d),r%0d",imm_split16bit,rA_num,rB_num);	      
+		$sformat(insnstring, "l.sh    0x%04h(r%0d),r%0d",imm_split16bit,rA_num,rB_num);
 	     end
-	   
+
 	   `OR1K_OPCODE_MFSPR:
 	     begin
 		$sformat(insnstring, "l.mfspr r%0d,r%0d,0x%04h",rD_num,rA_num,imm_16bit);
-	     end	      
+	     end
 
 	   `OR1K_OPCODE_MTSPR:
 	     begin
-		$sformat(insnstring, "l.mtspr r%0d,r%0d,0x%04h",rA_num,rB_num,imm_split16bit);	
+		$sformat(insnstring, "l.mtspr r%0d,r%0d,0x%04h",rA_num,rB_num,imm_split16bit);
 	     end
-	   
+
 	   `OR1K_OPCODE_MOVHI:
 	     begin
 		if (!insn[16])begin
@@ -748,54 +752,54 @@ module mor1kx_monitor #(parameter LOG_DIR= "../out") ();
 		else
 		  $sformat(insnstring, "l.macrc r%0d",rD_num);
 	     end
-	   
+
 	   `OR1K_OPCODE_ADDI:
 	     begin
 		$sformat(insnstring, "l.addi  r%0d,r%0d,0x%04h",rD_num,rA_num,imm_16bit);
 	     end
-	   
+
 	   `OR1K_OPCODE_ADDIC:
 	     begin
 		$sformat(insnstring, "l.addic r%0d,r%0d,0x%04h",rD_num,rA_num,imm_16bit);
 	     end
-	   
+
 	   `OR1K_OPCODE_ANDI:
 	     begin
 		$sformat(insnstring, "l.andi  r%0d,r%0d,0x%04h",rD_num,rA_num,imm_16bit);
-	     end	     
-	   
+	     end
+
 	   `OR1K_OPCODE_ORI:
 	     begin
 		$sformat(insnstring, "l.ori   r%0d,r%0d,0x%04h",rD_num,rA_num,imm_16bit);
-	     end	     
+	     end
 
 	   `OR1K_OPCODE_XORI:
 	     begin
 		$sformat(insnstring, "l.xori  r%0d,r%0d,0x%04h",rD_num,rA_num,imm_16bit);
-	     end	     
+	     end
 
 	   `OR1K_OPCODE_MULI:
 	     begin
 		$sformat(insnstring, "l.muli  r%0d,r%0d,0x%04h",rD_num,rA_num,imm_16bit);
 	     end
-	   
+
 	   `OR1K_OPCODE_ALU:
 	     begin
 		case(insn[`OR1K_ALU_OPC_SELECT])
 		  `OR1K_ALU_OPC_ADD:
-		    $sformat(insnstring, "l.add   r%0d,r%0d,r%0d",rD_num,rA_num,rB_num); 
+		    $sformat(insnstring, "l.add   r%0d,r%0d,r%0d",rD_num,rA_num,rB_num);
 		  `OR1K_ALU_OPC_ADDC:
-		    $sformat(insnstring, "l.addc  r%0d,r%0d,r%0d",rD_num,rA_num,rB_num); 
+		    $sformat(insnstring, "l.addc  r%0d,r%0d,r%0d",rD_num,rA_num,rB_num);
 		  `OR1K_ALU_OPC_SUB:
 		    $sformat(insnstring, "l.sub   r%0d,r%0d,r%0d",rD_num,rA_num,rB_num);
 		  `OR1K_ALU_OPC_AND:
-		    $sformat(insnstring, "l.and   r%0d,r%0d,r%0d",rD_num,rA_num,rB_num); 
+		    $sformat(insnstring, "l.and   r%0d,r%0d,r%0d",rD_num,rA_num,rB_num);
 		  `OR1K_ALU_OPC_OR:
-		    $sformat(insnstring, "l.or    r%0d,r%0d,r%0d",rD_num,rA_num,rB_num); 
+		    $sformat(insnstring, "l.or    r%0d,r%0d,r%0d",rD_num,rA_num,rB_num);
 		  `OR1K_ALU_OPC_XOR:
-		    $sformat(insnstring, "l.xor   r%0d,r%0d,r%0d",rD_num,rA_num,rB_num); 
+		    $sformat(insnstring, "l.xor   r%0d,r%0d,r%0d",rD_num,rA_num,rB_num);
 		  `OR1K_ALU_OPC_MUL:
-		    $sformat(insnstring, "l.mul   r%0d,r%0d,r%0d",rD_num,rA_num,rB_num); 
+		    $sformat(insnstring, "l.mul   r%0d,r%0d,r%0d",rD_num,rA_num,rB_num);
 		  `OR1K_ALU_OPC_SHRT:
 		    begin
 		       case(insn[`OR1K_ALU_OPC_SECONDARY_SELECT])
@@ -810,11 +814,11 @@ module mor1kx_monitor #(parameter LOG_DIR= "../out") ();
 		       endcase // case (insn[`OR1K_ALU_OPC_SECONDARY_SELECT])
 		    end
 		  `OR1K_ALU_OPC_DIV:
-		    $sformat(insnstring, "l.div   r%0d,r%0d,r%0d",rD_num,rA_num,rB_num); 
+		    $sformat(insnstring, "l.div   r%0d,r%0d,r%0d",rD_num,rA_num,rB_num);
 		  `OR1K_ALU_OPC_DIVU:
 		    $sformat(insnstring, "l.divu  r%0d,r%0d,r%0d",rD_num,rA_num,rB_num);
 		  `OR1K_ALU_OPC_MULU:
-		    $sformat(insnstring, "l.mulu  r%0d,r%0d,r%0d",rD_num,rA_num,rB_num);		  
+		    $sformat(insnstring, "l.mulu  r%0d,r%0d,r%0d",rD_num,rA_num,rB_num);
 		  `OR1K_ALU_OPC_CMOV:
 		    $sformat(insnstring, "l.cmov  r%0d,r%0d,r%0d",rD_num,rA_num,rB_num);
 		  `OR1K_ALU_OPC_FFL1:
@@ -826,7 +830,7 @@ module mor1kx_monitor #(parameter LOG_DIR= "../out") ();
 			   $sformat(insnstring, "l.fl1   r%0d,r%0d",rD_num,rA_num);
 		       endcase // case (insn[8])
 		    end
-		    
+
 		endcase // case (alu_op)
 		//$sformat(insnstring, "r%0d,r%0d,r%0d",rD_num,rA_num,rB_num);
 	     end
@@ -896,7 +900,7 @@ module mor1kx_monitor #(parameter LOG_DIR= "../out") ();
 		     $sformat(insnstring, "Oops cant decode lf.*.s FPUOP:0x%x", insn[`OR1K_FPUOP_SELECT]);
 		 endcase
 	     end
-	   
+
 	   `OR1K_OPCODE_SHRTI:
 	     begin
 		case(insn[`OR1K_ALU_OPC_SECONDARY_SELECT])
@@ -907,11 +911,11 @@ module mor1kx_monitor #(parameter LOG_DIR= "../out") ();
 		  `OR1K_ALU_OPC_SECONDARY_SHRT_SRA:
 		    $sformat(insnstring, "l.srai  r%0d,r%0d,0x%01h",rD_num,rA_num,insn[5:0]);
 		  `OR1K_ALU_OPC_SECONDARY_SHRT_ROR:
-		    $sformat(insnstring, "l.rori  r%0d,r%0d,0x%01h",rD_num,rA_num,insn[5:0]);		  
+		    $sformat(insnstring, "l.rori  r%0d,r%0d,0x%01h",rD_num,rA_num,insn[5:0]);
 		endcase // case (insn[`OR1K_ALU_OPC_SECONDARY_SELECT])
-		//$sformat(insnstring, "r%0d,r%0d,0x%0h",rD_num,rA_num,insn[5:0]);				
+		//$sformat(insnstring, "r%0d,r%0d,0x%0h",rD_num,rA_num,insn[5:0]);
 	     end // case: `OR1K_OPCODE_SHRTI
-	   
+
 	   `OR1K_OPCODE_SFIMM:
 	     begin
 		case(insn[`OR1K_COMP_OPC_SELECT])
@@ -930,15 +934,15 @@ module mor1kx_monitor #(parameter LOG_DIR= "../out") ();
 		  `OR1K_COMP_OPC_GTS:
 		    $sformat(insnstring, "l.sfgtsir%0d,0x%04h",rA_num, imm_16bit);
 		  `OR1K_COMP_OPC_GES:
-		    $sformat(insnstring, "l.sfgesir%0d,0x%04h",rA_num, imm_16bit); 
+		    $sformat(insnstring, "l.sfgesir%0d,0x%04h",rA_num, imm_16bit);
 		  `OR1K_COMP_OPC_LTS:
 		    $sformat(insnstring, "l.sfltsir%0d,0x%04h",rA_num, imm_16bit);
 		  `OR1K_COMP_OPC_LES:
 		    $sformat(insnstring, "l.sflesir%0d,0x%04h",rA_num, imm_16bit);
 		endcase // case (sf_op[2:0])
-		
+
 		//$sformat(insnstring, "r%0d,0x%0h",rA_num, imm_16bit);
-		
+
 	     end // case: `OR1K_OPCODE_SFXXI
 
 	   `OR1K_OPCODE_SF:
@@ -959,21 +963,21 @@ module mor1kx_monitor #(parameter LOG_DIR= "../out") ();
 		  `OR1K_COMP_OPC_GTS:
 		    $sformat(insnstring, "l.sfgts r%0d,r%0d",rA_num, rB_num);
 		  `OR1K_COMP_OPC_GES:
-		    $sformat(insnstring, "l.sfges r%0d,r%0d",rA_num, rB_num); 
+		    $sformat(insnstring, "l.sfges r%0d,r%0d",rA_num, rB_num);
 		  `OR1K_COMP_OPC_LTS:
 		    $sformat(insnstring, "l.sflts r%0d,r%0d",rA_num, rB_num);
 		  `OR1K_COMP_OPC_LES:
 		    $sformat(insnstring, "l.sfles r%0d,r%0d",rA_num, rB_num);
 		endcase // case (sf_op[2:0])
 		//$sformat(insnstring, "r%0d,r%0d",rA_num, rB_num);
-		
+
 	     end
-	   
+
 	   `OR1K_OPCODE_MACI:
 	     begin
 		$sformat(insnstring, "l.maci r%0d,0x%04h",rA_num,imm_16bit);
 	     end
-	   
+
 	   `OR1K_OPCODE_NOP:
 	     begin
 		$sformat(insnstring, "l.nop   0x%04h",imm_16bit);
@@ -999,10 +1003,10 @@ module mor1kx_monitor #(parameter LOG_DIR= "../out") ();
 		$sformat(insnstring, "%t: Unknown opcode 0x%0h",$time,opcode);
 		$sformat(insnstring, "%t: Unknown opcode 0x%0h",$time,opcode);
 	     end
-	   
-	 endcase // case (opcode)
-	 
-      end
-   endtask // mor1k_insn_to_string
 
-endmodule // mor1kx_module
+	 endcase // case (opcode)
+
+      end
+   endtask // or1k_marocchino_insn_to_string
+
+endmodule // or1k_marocchino_module
