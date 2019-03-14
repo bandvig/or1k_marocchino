@@ -423,7 +423,7 @@ module pfpu_marocchino_muldiv
   // right shift value
   // and appropriatelly corrected exponent
   wire s1o_exp13c_0              = ~(|s1o_exp13c);
-  wire [12:0] s2t_shr_of_neg_exp = 14'h2001 - {1'b0,s1o_exp13c}; // 8192-v+1
+  wire [12:0] s2t_shr_of_neg_exp = (~s1o_exp13c) + 13'd2; // (8192-v+1) and truncate to 13bits
   // variants:
   wire [12:0] s2t_shr_t;
   wire [12:0] s2t_exp13rx;
