@@ -10,7 +10,7 @@ cd $HOME/src/tools
 
 git clone http://git.veripool.org/git/verilator
 cd verilator
-git checkout verilator_3_902
+git checkout verilator_4_010
 
 autoconf
 ./configure --prefix=$HOME/tools
