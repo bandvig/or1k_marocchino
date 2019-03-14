@@ -228,7 +228,7 @@ module or1k_marocchino_dmmu
         if (spr_dmmu_cs) begin
           dtlb_match_spr_cs_r <= (|spr_bus_addr_r[10:9]) & ~spr_bus_addr_r[7];
           dtlb_trans_spr_cs_r <= (|spr_bus_addr_r[10:9]) &  spr_bus_addr_r[7];
-          dmmucr_spr_cs_r     <= (`SPR_OFFSET(spr_bus_addr_r) == `SPR_OFFSET(`OR1K_SPR_DMMUCR_ADDR));
+          dmmucr_spr_cs_r     <= (`SPR_OFFSET(({1'b0, spr_bus_addr_r})) == `SPR_OFFSET(`OR1K_SPR_DMMUCR_ADDR));
           spr_way_idx_r       <= spr_way_idx[WAYS_WIDTH-1:0];
           spr_access_addr_r   <= spr_bus_addr_r[OPTION_DMMU_SET_WIDTH-1:0];
         end

@@ -255,7 +255,7 @@ module or1k_marocchino_icache
 
   // ICACHE "chip select" / invalidation / data output
   wire spr_ic_cs  = spr_bus_stb_r & (spr_bus_addr_r[14:11] == `OR1K_SPR_IC_BASE);
-  wire spr_ic_inv = spr_bus_we_r & (`SPR_OFFSET(spr_bus_addr_r) == `SPR_OFFSET(`OR1K_SPR_ICBIR_ADDR));
+  wire spr_ic_inv = spr_bus_we_r & (`SPR_OFFSET(({1'b0, spr_bus_addr_r})) == `SPR_OFFSET(`OR1K_SPR_ICBIR_ADDR));
   assign spr_bus_dat_o = {OPTION_OPERAND_WIDTH{1'b0}};
 
 
