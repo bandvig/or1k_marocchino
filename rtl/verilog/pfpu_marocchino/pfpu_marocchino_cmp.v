@@ -225,18 +225,18 @@ module pfpu_marocchino_cmp
 
       12'b0_00_??_???_???_1: {blta, altb, aeqb} = 3'b001; //compare base on sign both are zero
 
-      12'b0_00_00_010_???_?: {blta, altb, aeqb} = 3'b100; // cmp exp, equal sign
-      12'b0_00_00_001_???_?: {blta, altb, aeqb} = 3'b010;
-      12'b0_00_11_010_???_?: {blta, altb, aeqb} = 3'b010;
-      12'b0_00_11_001_???_?: {blta, altb, aeqb} = 3'b100;
+      12'b0_00_00_010_???_0: {blta, altb, aeqb} = 3'b100; // cmp exp, equal sign
+      12'b0_00_00_001_???_0: {blta, altb, aeqb} = 3'b010;
+      12'b0_00_11_010_???_0: {blta, altb, aeqb} = 3'b010;
+      12'b0_00_11_001_???_0: {blta, altb, aeqb} = 3'b100;
 
-      12'b0_00_00_100_010_?: {blta, altb, aeqb} = 3'b100; // compare fractions, equal sign, equal exp
-      12'b0_00_00_100_001_?: {blta, altb, aeqb} = 3'b010;
-      12'b0_00_11_100_010_?: {blta, altb, aeqb} = 3'b010;
-      12'b0_00_11_100_001_?: {blta, altb, aeqb} = 3'b100;
+      12'b0_00_00_100_010_0: {blta, altb, aeqb} = 3'b100; // compare fractions, equal sign, equal exp
+      12'b0_00_00_100_001_0: {blta, altb, aeqb} = 3'b010;
+      12'b0_00_11_100_010_0: {blta, altb, aeqb} = 3'b010;
+      12'b0_00_11_100_001_0: {blta, altb, aeqb} = 3'b100;
 
-      12'b0_00_00_100_100_?: {blta, altb, aeqb} = 3'b001;
-      12'b0_00_11_100_100_?: {blta, altb, aeqb} = 3'b001;
+      12'b0_00_00_100_100_0: {blta, altb, aeqb} = 3'b001;
+      12'b0_00_11_100_100_0: {blta, altb, aeqb} = 3'b001;
 
       default: {blta, altb, aeqb} = 3'b000; // including NaNs
     endcase
