@@ -592,8 +592,8 @@ module or1k_marocchino_rf
     .en_b     (ram_b1_pb_en), // RAM-B1
     .we_b     (ram_b1_pb_we & (~pipeline_flush_i)), // RAM-B1
     .addr_b   (ram_xx_pb_addr), // RAM-B1
-    .din_b    (ram_xx_pb_data) // RAM-B1
-    //.dout_b   () // RAM-B1
+    .din_b    (ram_xx_pb_data), // RAM-B1
+    .dout_b   () // RAM-B1
   );
 
 
@@ -642,8 +642,8 @@ module or1k_marocchino_rf
     .en_b     (ram_a2_pb_en), // RAM-A2
     .we_b     (ram_a2_pb_we & (~pipeline_flush_i)), // RAM-A2
     .addr_b   (ram_xx_pb_addr), // RAM-A2
-    .din_b    (ram_xx_pb_data) // RAM-A2
-    //.dout_b   () // RAM-A2
+    .din_b    (ram_xx_pb_data), // RAM-A2
+    .dout_b   () // RAM-A2
   );
 
 
@@ -692,8 +692,8 @@ module or1k_marocchino_rf
     .en_b     (ram_b2_pb_en), // RAM-B2
     .we_b     (ram_b2_pb_we & (~pipeline_flush_i)), // RAM-B2
     .addr_b   (ram_xx_pb_addr), // RAM-B2
-    .din_b    (ram_xx_pb_data) // RAM-B2
-    //.dout_b   () // RAM-B2
+    .din_b    (ram_xx_pb_data), // RAM-B2
+    .dout_b   () // RAM-B2
   );
 
 
@@ -720,7 +720,7 @@ module or1k_marocchino_rf
            ram_rfb1_out) begin
     // synthesis parallel_case
     casez ({dcod_op_jal_i, dcod_immediate_sel_i, wrb2dec_d1b1_fwd})
-      3'b1??:  dcod_rfb1_o = 4'd8; // (FEATURE_DELAY_SLOT == "ENABLED")
+      3'b1??:  dcod_rfb1_o = 32'd8; // (FEATURE_DELAY_SLOT == "ENABLED")
       3'b01?:  dcod_rfb1_o = dcod_immediate_i;
       3'b001:  dcod_rfb1_o = wrbk_result1_i;
       default: dcod_rfb1_o = ram_rfb1_out;

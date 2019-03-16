@@ -464,8 +464,9 @@ module or1k_marocchino_oreg_buff
   reg  [RAM_AW-1:0] wop_addr_r; // address for write only port
 
   // Addressing arithmetic
-
+  /* verilator lint_off WIDTH */
   localparam [RAM_AW:0] RAM_ADDR_OWF = NUM_RAM_TAPS;
+  /* verilator lint_on WIDTH */
 
   wire [RAM_AW:0] rah_addr_add = rah_addr_r + 1'b1;
   wire [RAM_AW:0] wop_addr_add = wop_addr_r + 1'b1;
@@ -714,8 +715,9 @@ module or1k_marocchino_ff_oreg_buff
   reg  [RAM_AW-1:0] wop_addr_r; // address for write only port
 
   // Addressing arithmetic
-
+  /* verilator lint_off WIDTH */
   localparam [RAM_AW:0] RAM_ADDR_OWF = NUM_RAM_TAPS;
+  /* verilator lint_on WIDTH */
 
   wire [RAM_AW:0] rah_addr_add = rah_addr_r + 1'b1;
   wire [RAM_AW:0] wop_addr_add = wop_addr_r + 1'b1;

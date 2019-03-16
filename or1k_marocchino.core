@@ -50,7 +50,7 @@ filesets:
     file_type : verilogSource
 
   monitor:
-    files : [bench/verilog/mor1kx_monitor.v]
+    files : [bench/verilog/or1k_marocchino_monitor.v]
     file_type : verilogSource
 
 parameters:

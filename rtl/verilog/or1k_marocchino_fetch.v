@@ -311,7 +311,7 @@ module or1k_marocchino_fetch
       jr_gathering_target_r <= 1'b0;
     end
     else if (padv_s1) begin // next address to fetch
-      s1r_virt_addr_next    <= virt_addr_mux + 3'd4;
+      s1r_virt_addr_next    <= virt_addr_mux + 32'd4;
       jr_gathering_target_r <= jr_gathering_target_i;
     end
     else if (do_branch_i) begin // next address to fetch
@@ -452,7 +452,7 @@ module or1k_marocchino_fetch
   always @(posedge cpu_clk) begin
     if (padv_s2) begin
       s2o_virt_addr       <= s1o_virt_addr;
-      s2o_after_ds_target <= s1o_virt_addr + 4'd8; // (FEATURE_DSX == "ENABLED")
+      s2o_after_ds_target <= s1o_virt_addr + 32'd8; // (FEATURE_DSX == "ENABLED")
     end
   end // @ clock
 
