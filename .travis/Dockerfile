@@ -35,7 +35,6 @@ VOLUME /tmp/src/cores/or1k_marocchino
 ENV TRAVIS_BUILD_DIR=/tmp/src/cores/or1k_marocchino
 WORKDIR /tmp/src/cores/or1k_marocchino
 
-ENV PIPELINE=CAPPUCCINO
 ENV SIM=icarus
 
 LABEL maintainer Stafford Horne <shorne@gmail.com>

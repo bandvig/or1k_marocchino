@@ -24,7 +24,6 @@ install:
   - .travis/install-${JOB}.sh
 
 script:
-  - export PIPELINE=MAROCCHINO
   - export EXPECTED_FAILURES=${EF}
   - export EXTRA_CORE_ARGS=${EXTRA}
   - .travis/run-${JOB}.sh
