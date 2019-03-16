@@ -150,8 +150,8 @@ module or1k_marocchino_pic
         // wait SPR access request
         SPR_PIC_WAIT: begin
           if (spr_pic_cs) begin
-            spr_picmr_cs_r <= (`SPR_OFFSET(spr_bus_addr_r1) == `SPR_OFFSET(`OR1K_SPR_PICMR_ADDR));
-            spr_picsr_cs_r <= (`SPR_OFFSET(spr_bus_addr_r1) == `SPR_OFFSET(`OR1K_SPR_PICSR_ADDR));
+            spr_picmr_cs_r <= (`SPR_OFFSET(({1'b0, spr_bus_addr_r1})) == `SPR_OFFSET(`OR1K_SPR_PICMR_ADDR));
+            spr_picsr_cs_r <= (`SPR_OFFSET(({1'b0, spr_bus_addr_r1})) == `SPR_OFFSET(`OR1K_SPR_PICSR_ADDR));
             spr_pic_state  <= spr_bus_we_r1 ? SPR_PIC_WE : SPR_PIC_RE;
           end
         end
