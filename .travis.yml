@@ -24,7 +24,6 @@ install:
   - .travis/install-${JOB}.sh
 
 script:
-  - export PIPELINE=MAROCCHINO
   - export EXPECTED_FAILURES=${EF}
   - export EXTRA_CORE_ARGS=${EXTRA}
   - .travis/run-${JOB}.sh
@@ -37,5 +36,5 @@ jobs:
     - stage: verilator
       env: JOB=verilator
     - stage: testing
-      env: JOB=or1k-tests SIM=icarus EF="or1k-cy"
+      env: JOB=or1k-tests SIM=icarus EF="or1k-cy or1k-ov or1k-shortjump"
 

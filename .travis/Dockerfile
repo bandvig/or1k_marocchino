@@ -2,8 +2,8 @@
 # this is not actually used in travis
 #
 # to use:
-#   sudo docker build -t travis-mor1kx .travis/
-#   sudo docker run -it --rm -v ${PWD}:/tmp/src/cores/mor1kx:Z travis-mor1kx
+#   sudo docker build -t travis-marocchino .travis/
+#   sudo docker run -it --rm -v ${PWD}:/tmp/src/cores/or1k_marocchino:Z travis-marocchino
 #   $ .travis/install-or1k-tests.sh && .travis/run-or1k-tests.sh
 #
 # tip:
@@ -30,12 +30,11 @@ RUN groupadd -g 999 travis && \
     useradd -m -r -u 999 -g travis travis
 USER travis
 
-RUN mkdir -p /tmp/src/cores/mor1kx
-VOLUME /tmp/src/cores/mor1kx
-ENV TRAVIS_BUILD_DIR=/tmp/src/cores/mor1kx
-WORKDIR /tmp/src/cores/mor1kx
+RUN mkdir -p /tmp/src/cores/or1k_marocchino
+VOLUME /tmp/src/cores/or1k_marocchino
+ENV TRAVIS_BUILD_DIR=/tmp/src/cores/or1k_marocchino
+WORKDIR /tmp/src/cores/or1k_marocchino
 
-ENV PIPELINE=CAPPUCCINO
 ENV SIM=icarus
 
 LABEL maintainer Stafford Horne <shorne@gmail.com>
