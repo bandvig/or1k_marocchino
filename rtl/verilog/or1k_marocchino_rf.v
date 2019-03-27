@@ -44,7 +44,6 @@ module or1k_marocchino_rf
   input                                 cpu_rst,
 
   // pipeline control signals
-  input                                 pipeline_flush_i,
   input                                 padv_dcod_i,
 
   // SPR bus
@@ -81,6 +80,11 @@ module or1k_marocchino_rf
   input                                 wrbk_rfd2_we_i,
   input      [OPTION_RF_ADDR_WIDTH-1:0] wrbk_rfd2_adr_i,
   input      [OPTION_OPERAND_WIDTH-1:0] wrbk_result2_i,
+  // write back is enabled
+  //  - for cases when "next not executed instruction" is
+  //    used after l.rfe the last executed instruction is
+  //    able to write-back its result
+  input                                 wrbk_rfdx_en_i, 
 
   // outputs (combinatorial)
   output reg [OPTION_OPERAND_WIDTH-1:0] dcod_rfa1_o,
@@ -533,14 +537,14 @@ module or1k_marocchino_rf
     // port "a"
     .clk_a    (cpu_clk), // RAM-A1
     .en_a     (ram_a1_pa_en), // RAM-A1
-    .we_a     (ram_a1_pa_we & (~pipeline_flush_i)), // RAM-A1
+    .we_a     (ram_a1_pa_we & wrbk_rfdx_en_i), // RAM-A1
     .addr_a   (ram_a1_pa_addr), // RAM-A1
     .din_a    (ram_xx_pa_data), // RAM-A1
     .dout_a   (ram_rfa1_out), // RAM-A1
     // port "b"
     .clk_b    (cpu_clk),
     .en_b     (ram_a1_pb_en), // RAM-A1
-    .we_b     (ram_a1_pb_we & (~pipeline_flush_i)), // RAM-A1
+    .we_b     (ram_a1_pb_we & wrbk_rfdx_en_i), // RAM-A1
     .addr_b   (ram_xx_pb_addr), // RAM-A1
     .din_b    (ram_xx_pb_data), // RAM-A1
     .dout_b   (spr_gpr0_data) // RAM-A1
@@ -583,14 +587,14 @@ module or1k_marocchino_rf
     // port "a"
     .clk_a    (cpu_clk), // RAM-B1
     .en_a     (ram_b1_pa_en), // RAM-B1
-    .we_a     (ram_b1_pa_we & (~pipeline_flush_i)), // RAM-B1
+    .we_a     (ram_b1_pa_we & wrbk_rfdx_en_i), // RAM-B1
     .addr_a   (ram_b1_pa_addr), // RAM-B1
     .din_a    (ram_xx_pa_data), // RAM-B1
     .dout_a   (ram_rfb1_out), // RAM-B1
     // port "b"
     .clk_b    (cpu_clk),
     .en_b     (ram_b1_pb_en), // RAM-B1
-    .we_b     (ram_b1_pb_we & (~pipeline_flush_i)), // RAM-B1
+    .we_b     (ram_b1_pb_we & wrbk_rfdx_en_i), // RAM-B1
     .addr_b   (ram_xx_pb_addr), // RAM-B1
     .din_b    (ram_xx_pb_data), // RAM-B1
     .dout_b   () // RAM-B1
@@ -633,14 +637,14 @@ module or1k_marocchino_rf
     // port "a"
     .clk_a    (cpu_clk), // RAM-A2
     .en_a     (ram_a2_pa_en), // RAM-A2
-    .we_a     (ram_a2_pa_we & (~pipeline_flush_i)), // RAM-A2
+    .we_a     (ram_a2_pa_we & wrbk_rfdx_en_i), // RAM-A2
     .addr_a   (ram_a2_pa_addr), // RAM-A2
     .din_a    (ram_xx_pa_data), // RAM-A2
     .dout_a   (ram_rfa2_out), // RAM-A2
     // port "b"
     .clk_b    (cpu_clk),
     .en_b     (ram_a2_pb_en), // RAM-A2
-    .we_b     (ram_a2_pb_we & (~pipeline_flush_i)), // RAM-A2
+    .we_b     (ram_a2_pb_we & wrbk_rfdx_en_i), // RAM-A2
     .addr_b   (ram_xx_pb_addr), // RAM-A2
     .din_b    (ram_xx_pb_data), // RAM-A2
     .dout_b   () // RAM-A2
@@ -683,14 +687,14 @@ module or1k_marocchino_rf
     // port "a"
     .clk_a    (cpu_clk), // RAM-B2
     .en_a     (ram_b2_pa_en), // RAM-B2
-    .we_a     (ram_b2_pa_we & (~pipeline_flush_i)), // RAM-B2
+    .we_a     (ram_b2_pa_we & wrbk_rfdx_en_i), // RAM-B2
     .addr_a   (ram_b2_pa_addr), // RAM-B2
     .din_a    (ram_xx_pa_data), // RAM-B2
     .dout_a   (ram_rfb2_out), // RAM-B2
     // port "b"
     .clk_b    (cpu_clk),
     .en_b     (ram_b2_pb_en), // RAM-B2
-    .we_b     (ram_b2_pb_we & (~pipeline_flush_i)), // RAM-B2
+    .we_b     (ram_b2_pb_we & wrbk_rfdx_en_i), // RAM-B2
     .addr_b   (ram_xx_pb_addr), // RAM-B2
     .din_b    (ram_xx_pb_data), // RAM-B2
     .dout_b   () // RAM-B2

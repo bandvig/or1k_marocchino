@@ -1024,7 +1024,7 @@ module or1k_marocchino_oman
   //  # for D2 we delay WriteBack for 1-clock
   //    to split write into RF from D1
   always @(posedge cpu_clk) begin
-    if (pipeline_flush_i) begin
+    if (cpu_rst) begin
       wrbk_rfdx_we_o <= 1'b0; // flush
       wrbk_rfd2_we_o <= 1'b0; // flush
     end
