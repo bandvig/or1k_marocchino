@@ -276,6 +276,11 @@ module or1k_marocchino_cpu
   wire                            wrbk_rfdx_we;
   wire                            wrbk_rfd2_we;
   wire [OPTION_RF_ADDR_WIDTH-1:0] wrbk_rfd2_adr;
+  // write back is enabled
+  //  - for cases when "next not executed instruction" is
+  //    used after l.rfe the last executed instruction is
+  //    able to write-back its result
+  reg                             wrbk_rfdx_en;
 
 
   // Logic to support Jump / Branch taking
@@ -723,7 +728,6 @@ module or1k_marocchino_cpu
     .cpu_clk                          (cpu_clk), // RF
     .cpu_rst                          (cpu_rst), // RF
     // pipeline control signals
-    .pipeline_flush_i                 (pipeline_flush), // RF
     .padv_dcod_i                      (padv_dcod), // RF
     // SPR bus
     .spr_bus_addr_i                   (spr_bus_addr_o), // RF
@@ -756,6 +760,11 @@ module or1k_marocchino_cpu
     .wrbk_rfd2_we_i                   (wrbk_rfd2_we), // RF
     .wrbk_rfd2_adr_i                  (wrbk_rfd2_adr), // RF
     .wrbk_result2_i                   (wrbk_result2), // RF
+    // write back is enabled
+    //  - for cases when "next not executed instruction" is
+    //    used after l.rfe the last executed instruction is
+    //    able to write-back its result
+    .wrbk_rfdx_en_i                   (wrbk_rfdx_en), // RF
     // Operands
     .dcod_rfa1_o                      (dcod_rfa1), // RF
     .dcod_rfb1_o                      (dcod_rfb1), // RF
@@ -1943,18 +1952,39 @@ module or1k_marocchino_cpu
   // Exceptions and External Interrupts //
   //------------------------------------//
 
-  // --- exceptions ---
+  // external interrupts
+  wire exec_tt_interrupt  = tt_rdy  & tt_interrupt_enable  & exec_interrupts_en; // from "Tick Timer"
+  wire exec_pic_interrupt = pic_rdy & pic_interrupt_enable & exec_interrupts_en; // from "Programmble Interrupt Controller"
+
+  // write back is enabled
+  //  - for cases when "next not executed instruction" is
+  //    used after l.rfe the last executed instruction is
+  //    able to write-back its result
+  wire exec_rfdx_en = (~exec_an_except_fd)        & (~exec_except_ibus_align)    &    // EXEC-RF-WRITE-ENABLED
+                      (~exec_except_overflow_div) & (~exec_except_overflow_1clk) &    // EXEC-RF-WRITE-ENABLED
+                   /* (~exec_except_fpxx_cmp)     & (~exec_except_fpxx_arith)    & */ // EXEC-RF-WRITE-ENABLED
+                      (~exec_an_except_lsu)       & (~sbuf_err)                  &    // EXEC-RF-WRITE-ENABLED
+                   // MAROCCHINO_TODO: not meet arch. manual:
+                      (~exec_tt_interrupt)        & (~exec_pic_interrupt);            // EXEC-RF-WRITE-ENABLED
+
+  // write back is enabled register
+  always @(posedge cpu_clk) begin
+    if (cpu_rst)
+      wrbk_rfdx_en <= 1'b1; // at reset
+    else if (~wrbk_rfdx_en)
+      wrbk_rfdx_en <= ctrl_branch_exception; // as done of switching to exception / interrupt 
+    else if (padv_wrbk)
+      wrbk_rfdx_en <= exec_rfdx_en; // at Write-Bacl advance
+  end // at cpu clock
+
+  // combined "an exception" flag
   assign exec_an_except = exec_an_except_fd        | exec_except_ibus_align    |  // EXEC-AN-EXCEPT
                           exec_except_overflow_div | exec_except_overflow_1clk |  // EXEC-AN-EXCEPT
                           exec_except_fpxx_cmp     | exec_except_fpxx_arith    |  // EXEC-AN-EXCEPT
                           exec_an_except_lsu       | sbuf_err                  |  // EXEC-AN-EXCEPT
                           exec_tt_interrupt        | exec_pic_interrupt;          // EXEC-AN-EXCEPT
 
-  // --- external interrupts ---
-  wire exec_tt_interrupt  = tt_rdy  & tt_interrupt_enable  & exec_interrupts_en; // from "Tick Timer"
-  wire exec_pic_interrupt = pic_rdy & pic_interrupt_enable & exec_interrupts_en; // from "Programmble Interrupt Controller"
-
-  // --- Write-Back latches ---
+  // Write-Back latches for exceptions / inerrupts
   always @(posedge cpu_clk) begin
     if (padv_wrbk) begin  // Write-Back: Exceptions and External Interrupts
       // IFETCH exceptions
