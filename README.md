@@ -15,7 +15,7 @@ The core:
 It is written in Verilog HDL.
 
 This repository only contains the IP source code and some documentation. For
-a verification environment, please see other projects.
+a verification environment, please see other projects.  See some details below.
 
 ## License
 
@@ -36,6 +36,29 @@ details please see the [LICENSE](./LICENSE) file or http://juliusbaxter.net/ohdl
  10) Don’t include files if you don’t use things from inclusions
  11) Don’t use timescale (inherited from mor1kx)
  12) In general: try to keep nice appearance of MAROCCHINO sources by following the format of already written code
+
+## Testing and Continuous Integration
+
+A CPU core cannot be trusted without a full set of verification testing.  The
+`or1k_marocchino` is constantly verified for correctness with the or1k Continuous
+Integration (CI) suite running in [travis ci](travis-ci.org).  This currently covers:
+
+ - source linting - a `verilator --lint-only` check is run on each commit to
+   ensure there are no code quality issues.
+ - [or1k-tests](https://github.com/openrisc/or1k-tests) - the `or1k-tests` test suite
+   is run against different configurations to check most major instructions,
+   exception handling, caching, timers, interrupts and other features.
+
+   Status: [![Build Status](https://travis-ci.org/openrisc/or1k_marocchino.svg?branch=master)](https://travis-ci.org/openrisc/or1k_marocchino)
+
+In the future we are working on bringing more tests including:
+
+  - softfloat, fpu verification (may not be feasable in CI due to long run times)
+  - Resource utilization regression with yosys synth_intel synth_xilinx
+  - Formal verification with yosys
+  - Verification that each revision can boot differnt OS's **Linux**, **RTMES**
+  - Golden reference `or1ksim` trace comparisons vs verilog model using constrained
+    random inputs.
 
 ## Configuration
 
