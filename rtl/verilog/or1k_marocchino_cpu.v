@@ -407,9 +407,9 @@ module or1k_marocchino_cpu
   wire                              wrbk_except_fpxx_arith;   // generate FPx exception by FPx flags
   // FPU3264 comparison part
   wire                              dcod_op_fpxx_cmp;
-  wire                        [2:0] dcod_opc_fpxx_cmp;
+  wire                        [3:0] dcod_opc_fpxx_cmp;
   wire                              exec_op_fpxx_cmp;
-  wire                        [2:0] exec_opc_fpxx_cmp;
+  wire                        [3:0] exec_opc_fpxx_cmp;
   wire                              fpxx_cmp_valid;
   wire                              grant_wrbk_to_fpxx_cmp;
   wire                              exec_except_fpxx_cmp;
@@ -1563,10 +1563,10 @@ module or1k_marocchino_cpu
   // OPC layout for multi-clocks reservation station
   wire exec_op_fp64_arith;
   //  # double precision bit:                                1
-  //  # fp64 comparison variant:                             3
+  //  # fp64 comparison variant:                             4
   //  # ------------------------------------------------------
-  //  # overall:                                             4
-  localparam FPU_OPC_WIDTH = 4;
+  //  # overall:                                             5
+  localparam FPU_OPC_WIDTH = 5;
 
   // FPU input operands
   wire [(OPTION_OPERAND_WIDTH-1):0] exec_fpxx_a1;
@@ -1972,7 +1972,7 @@ module or1k_marocchino_cpu
     if (cpu_rst)
       wrbk_rfdx_en <= 1'b1; // at reset
     else if (~wrbk_rfdx_en)
-      wrbk_rfdx_en <= ctrl_branch_exception; // as done of switching to exception / interrupt 
+      wrbk_rfdx_en <= ctrl_branch_exception; // as done of switching to exception / interrupt
     else if (padv_wrbk)
       wrbk_rfdx_en <= exec_rfdx_en; // at Write-Bacl advance
   end // at cpu clock

@@ -170,7 +170,7 @@ module or1k_marocchino_decode
 
   // FPU-64 comparison part
   output reg                            dcod_op_fpxx_cmp_o,
-  output reg                      [2:0] dcod_opc_fpxx_cmp_o,
+  output reg                      [3:0] dcod_opc_fpxx_cmp_o,
 
   // Combined for FPXX_RSRVS
   output reg                            dcod_op_fpxx_any_o,
@@ -370,19 +370,29 @@ module or1k_marocchino_decode
   //  # for further legality detection
   wire op_fpxx_cmp_l = fetch_insn_i[3] &          // comparison operation
                        (~(|fetch_insn_i[10:8])) & // all reserved bits are zeros
-                       (fetch_insn_i[2:0] < 3'd6);
+                       (fetch_insn_i[2:0] < 3'd7);
   //  # directly for FPU32 execution unit
   wire op_fpxx_cmp = op_fpxx_cmp_l & (opc_insn == `OR1K_OPCODE_FPU);
   // fpu comparison opc:
   // ===================
-  // 000 = EQ
-  // 001 = NE
-  // 010 = GT
-  // 011 = GE
-  // 100 = LT
-  // 101 = LE
-  wire [2:0] opc_fpxx_cmp = fetch_insn_i[2:0];
-
+  // Ordered:
+  //   0000 = EQ
+  //   0001 = NE
+  //   0010 = GT
+  //   0011 = GE
+  //   0100 = LT
+  //   0101 = LE
+  // Unordered:
+  //   1000 = EQ
+  //   1001 = NE
+  //   1010 = GT
+  //   1011 = GE
+  //   1100 = LT
+  //   1101 = LE
+  //   1110 = UN
+  wire [3:0] opc_fpxx_cmp = {fetch_insn_i[5], fetch_insn_i[2:0]};
+  //               unordered ^^^^^^^^^^^^^^^  ^^^^^^^^^^^^^^^^^
+  //                                  ordered |||||||||||||||||
 
   // Immediate for MF(T)SPR, LOADs and STOREs
   wire [`OR1K_IMM_WIDTH-1:0] imm16;

@@ -84,7 +84,7 @@ module pfpu_marocchino_top
 
   // Commands for comparison part
   input                               exec_op_fpxx_cmp_i,
-  input                         [2:0] exec_opc_fpxx_cmp_i,
+  input                         [3:0] exec_opc_fpxx_cmp_i,
 
   // Operands from reservation station
   input                        [31:0] exec_fpxx_a1_i,

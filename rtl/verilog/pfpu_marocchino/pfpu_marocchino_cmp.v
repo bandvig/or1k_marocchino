@@ -53,7 +53,7 @@ module pfpu_marocchino_cmp
   input              grant_wrbk_to_fpxx_cmp_i,
   // command
   input              op_fpxx_cmp_i,
-  input        [2:0] opc_fpxx_cmp_i,
+  input        [3:0] opc_fpxx_cmp_i,
   // data related to operand A
   input              signa_i,
   input              opa_0_i,
@@ -93,13 +93,13 @@ module pfpu_marocchino_cmp
        s??t_name - "S"tage number "??", "T"emporary (internally)
   */
 
-  localparam FP_OPC_SFEQ = 3'b000;
-  localparam FP_OPC_SFNE = 3'b001;
-  localparam FP_OPC_SFGT = 3'b010;
-  localparam FP_OPC_SFGE = 3'b011;
-  localparam FP_OPC_SFLT = 3'b100;
-  localparam FP_OPC_SFLE = 3'b101;
-
+  // For ordered / unordered comparison
+  localparam [2:0] FP_OPC_SFEQ = 3'b000;
+  localparam [2:0] FP_OPC_SFNE = 3'b001;
+  localparam [2:0] FP_OPC_SFGT = 3'b010;
+  localparam [2:0] FP_OPC_SFGE = 3'b011;
+  localparam [2:0] FP_OPC_SFLT = 3'b100;
+  localparam [2:0] FP_OPC_SFLE = 3'b101;
 
   // Comparison pipe controls
   //  ## Write-Back tacking comparison result
@@ -117,7 +117,8 @@ module pfpu_marocchino_cmp
 
   /**** Stage #1: just output latches ****/
 
-  reg  [2:0] s1o_opc_fpxx_cmp;
+  reg  [2:0] s1o_opc_fpxx_cmp_any; // ordered / unordered part
+  reg        s1o_opc_fpxx_cmp_urd; // do unordered comparison flag
   // data related to operand A
   reg        s1o_signa;
   reg        s1o_opa_0;
@@ -137,7 +138,8 @@ module pfpu_marocchino_cmp
   // ---
   always @(posedge cpu_clk) begin
     if (s1_adv) begin
-      s1o_opc_fpxx_cmp <= opc_fpxx_cmp_i;
+      s1o_opc_fpxx_cmp_any <= opc_fpxx_cmp_i[2:0];
+      s1o_opc_fpxx_cmp_urd <= opc_fpxx_cmp_i[3];
       // data related to operand A
       s1o_signa <= signa_i;
       s1o_opa_0 <= opa_0_i;
@@ -182,8 +184,8 @@ module pfpu_marocchino_cmp
   wire anan = s1o_qnan | s1o_snan;
   // Comparison invalid when sNaN in on an equal comparison,
   // or any NaN for any other comparison.
-  wire inv_cmp = (s1o_snan & (s1o_opc_fpxx_cmp == FP_OPC_SFEQ)) |
-                 (anan     & (s1o_opc_fpxx_cmp != FP_OPC_SFEQ));
+  wire inv_cmp = (s1o_snan & (s1o_opc_fpxx_cmp_any == FP_OPC_SFEQ)) |
+                 (anan     & (s1o_opc_fpxx_cmp_any != FP_OPC_SFEQ) & (~s1o_opc_fpxx_cmp_urd));
 
 
   ////////////////////////////////////////////////////////////////////////
@@ -195,16 +197,18 @@ module pfpu_marocchino_cmp
 
   reg altb, blta, aeqb;
 
-  always @(    s1o_qnan or      s1o_snan or  s1o_infa or s1o_infb or
+  always @(        anan or
+               s1o_infa or      s1o_infb or
               s1o_signa or     s1o_signb or
              s1o_exp_eq or    s1o_exp_gt or    exp_lt or
-           s1o_fract_eq or  s1o_fract_gt or  fract_lt or  all_zero) begin
-    casez( {(s1o_qnan | s1o_snan),
-                         s1o_infa,      s1o_infb,
-                        s1o_signa,     s1o_signb,
-                       s1o_exp_eq,    s1o_exp_gt,    exp_lt,
-                     s1o_fract_eq,  s1o_fract_gt,  fract_lt,
-                                                   all_zero})
+           s1o_fract_eq or  s1o_fract_gt or  fract_lt or
+                                             all_zero) begin
+    casez ({        anan,
+                s1o_infa,      s1o_infb,
+               s1o_signa,     s1o_signb,
+              s1o_exp_eq,    s1o_exp_gt,    exp_lt,
+            s1o_fract_eq,  s1o_fract_gt,  fract_lt,
+                                          all_zero})
       12'b0_11_00_???_???_?: {blta, altb, aeqb} = 3'b001; // both op INF comparisson
       12'b0_11_01_???_???_?: {blta, altb, aeqb} = 3'b100;
       12'b0_11_10_???_???_?: {blta, altb, aeqb} = 3'b010;
@@ -238,25 +242,27 @@ module pfpu_marocchino_cmp
       12'b0_00_00_100_100_0: {blta, altb, aeqb} = 3'b001;
       12'b0_00_11_100_100_0: {blta, altb, aeqb} = 3'b001;
 
-      default: {blta, altb, aeqb} = 3'b000; // including NaNs
+      default:               {blta, altb, aeqb} = 3'b000; // including NaNs
     endcase
   end // @ clock
 
 
   ////////////////////////////////////////////////////////////////////////
   // Comparison cmp_flag generation
-  reg cmp_flag;
-  always @(altb or blta or aeqb or s1o_opc_fpxx_cmp) begin
+  reg  cmp_res_any; // ordered / unordered part
+  wire cmp_res = (s1o_opc_fpxx_cmp_urd & anan) | cmp_res_any;
+  // ---
+  always @(altb or blta or aeqb or s1o_opc_fpxx_cmp_any) begin
     // synthesis parallel_case
-    case(s1o_opc_fpxx_cmp)
-      FP_OPC_SFEQ: cmp_flag = aeqb;
-      FP_OPC_SFNE: cmp_flag = ~aeqb;
-      FP_OPC_SFGT: cmp_flag = blta & ~aeqb;
-      FP_OPC_SFGE: cmp_flag = blta | aeqb;
-      FP_OPC_SFLT: cmp_flag = altb & ~aeqb;
-      FP_OPC_SFLE: cmp_flag = altb | aeqb;
-      default:     cmp_flag = 1'b0;
-    endcase // case (fpu_op_r)
+    case (s1o_opc_fpxx_cmp_any)
+      FP_OPC_SFEQ: cmp_res_any = aeqb;
+      FP_OPC_SFNE: cmp_res_any = ~anan & ~aeqb;
+      FP_OPC_SFGT: cmp_res_any = blta & ~aeqb;
+      FP_OPC_SFGE: cmp_res_any = blta | aeqb;
+      FP_OPC_SFLT: cmp_res_any = altb & ~aeqb;
+      FP_OPC_SFLE: cmp_res_any = altb | aeqb;
+      default:     cmp_res_any = 1'b0;
+    endcase
   end // always@ *
 
 
@@ -275,8 +281,8 @@ module pfpu_marocchino_cmp
   // Just before latching
 
   //  # set/slear commands
-  wire s2t_fpxx_flag_set   =  cmp_flag;
-  wire s2t_fpxx_flag_clear = ~cmp_flag;
+  wire s2t_fpxx_flag_set   =  cmp_res;
+  wire s2t_fpxx_flag_clear = ~cmp_res;
   //  # FP32 comparison flags
   wire s2t_fpxx_cmp_inv    = fpu_mask_flags_inv_i & inv_cmp;
   wire s2t_fpxx_cmp_inf    = fpu_mask_flags_inf_i & (s1o_infa | s1o_infb);
