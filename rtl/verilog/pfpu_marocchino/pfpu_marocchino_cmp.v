@@ -181,11 +181,15 @@ module pfpu_marocchino_cmp
 
   ////////////////////////////////////////////////////////////////////////
   // Exception Logic
-  wire anan = s1o_qnan | s1o_snan;
-  // Comparison invalid when sNaN in on an equal comparison,
-  // or any NaN for any other comparison.
-  wire inv_cmp = (s1o_snan & (s1o_opc_fpxx_cmp_any == FP_OPC_SFEQ)) |
-                 (anan     & (s1o_opc_fpxx_cmp_any != FP_OPC_SFEQ) & (~s1o_opc_fpxx_cmp_urd));
+  //  An operand is either sNaN or NaN
+  wire anan    = s1o_qnan | s1o_snan;
+  //  Compatison is ordered/unordered EQ/NE
+  wire eqne    = (s1o_opc_fpxx_cmp_any == FP_OPC_SFEQ) |
+                 (s1o_opc_fpxx_cmp_any == FP_OPC_SFNE);
+  // Comparison is invalid if:
+  //  1) sNaN is an operand of ordered/unordered EQ/NE comparison
+  //  2)  NaN is an operand of ordered LT/LE/GT/GE comparison
+  wire inv_cmp = (s1o_snan & eqne) | (anan & (~eqne) & (~s1o_opc_fpxx_cmp_urd));
 
 
   ////////////////////////////////////////////////////////////////////////
@@ -256,7 +260,7 @@ module pfpu_marocchino_cmp
     // synthesis parallel_case
     case (s1o_opc_fpxx_cmp_any)
       FP_OPC_SFEQ: cmp_res_any = aeqb;
-      FP_OPC_SFNE: cmp_res_any = ~anan & ~aeqb;
+      FP_OPC_SFNE: cmp_res_any = ~aeqb;
       FP_OPC_SFGT: cmp_res_any = blta & ~aeqb;
       FP_OPC_SFGE: cmp_res_any = blta | aeqb;
       FP_OPC_SFLT: cmp_res_any = altb & ~aeqb;
