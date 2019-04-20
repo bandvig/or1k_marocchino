@@ -366,10 +366,20 @@ module or1k_marocchino_lsu
       s1o_op_msync <= 1'b0;                // de-assert msync
   end // @cpu-clk
 
+  // virtual address
+  // it must be set to an appropriate value (zero for example)
+  // at CPU reset to support DCACHE invalidation proccess
+  // being held before 1st load command
+  always @(posedge cpu_clk) begin
+    if (cpu_rst)                          // clean up stage #1 virtual address
+      s1o_virt_addr <= {LSUOOW{1'b0}};
+    else if (lsu_s1_adv)                  // latch stage #1 virtual address
+      s1o_virt_addr <= s1t_virt_addr;
+  end // @cpu-clk
+
   // load/store attributes
   always @(posedge cpu_clk) begin
     if (lsu_s1_adv) begin // latch data from LSU-RSRVS without l.msync
-      s1o_virt_addr  <= s1t_virt_addr;
       s1o_lsu_b1     <= exec_lsu_b1_i;
       s1o_sbuf_epcr  <= s1t_sbuf_epcr;
       s1o_lsu_length <= exec_lsu_length_i;
