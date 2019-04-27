@@ -354,9 +354,7 @@ module or1k_marocchino_immu
                    TLB_READ            = 4'b1000; */
 
   generate
-  /* verilator lint_off WIDTH */
   if (FEATURE_IMMU_HW_TLB_RELOAD != "NONE") begin
-  /* verilator lint_on WIDTH */
 
     initial begin
       $display("IMMU ERROR: HW TLB reload is not implemented in MAROCCHINO");

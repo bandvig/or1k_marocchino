@@ -358,9 +358,7 @@ module or1k_marocchino_dmmu
                    TLB_READ             = 4'b1000;*/
 
   generate
-  /* verilator lint_off WIDTH */
   if (FEATURE_DMMU_HW_TLB_RELOAD != "NONE") begin
-  /* verilator lint_on WIDTH */
 
     initial begin
       $display("DMMU ERROR: HW TLB reload is not implemented in MAROCCHINO");

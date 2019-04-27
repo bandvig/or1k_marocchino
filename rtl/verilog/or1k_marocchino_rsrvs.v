@@ -336,9 +336,7 @@ module or1k_marocchino_rsrvs
 
   // exclusive latches for FPU3264 reservation station
   generate
-  /* verilator lint_off WIDTH */
   if (RSRVS_FPU == 1) begin : busy_fpxx_enabled
-  /* verilator lint_on WIDTH */
     //  # relative operand A2
     reg                             busy_hazard_d1a2_r;
     reg                             busy_hazard_d2a2_r;
@@ -545,9 +543,7 @@ module or1k_marocchino_rsrvs
 
   //  ## for FPU3264
   generate
-  /* verilator lint_off WIDTH */
   if (RSRVS_FPU == 1) begin : exec_fpxx_enabled
-  /* verilator lint_on WIDTH */
     // registers for operands A2 & B2
     reg [OPTION_OPERAND_WIDTH-1:0] exec_rfa2_r;
     reg [OPTION_OPERAND_WIDTH-1:0] exec_rfb2_r;

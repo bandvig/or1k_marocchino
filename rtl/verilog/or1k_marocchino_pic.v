@@ -262,9 +262,7 @@ module or1k_marocchino_pic
   // PIC status register
   generate
   genvar  irqline;
-  /* verilator lint_off WIDTH */
   if (OPTION_PIC_TRIGGER == "EDGE") begin : edge_triggered
-  /* verilator lint_on WIDTH */
 
     reg  [31:0] irq_unmasked_r;
     wire [31:0] irq_unmasked_edge;
@@ -294,18 +292,14 @@ module or1k_marocchino_pic
     end
 
   end // trigger is "edge"
-  /* verilator lint_off WIDTH */
   else if (OPTION_PIC_TRIGGER == "LEVEL") begin : level_triggered
-  /* verilator lint_on WIDTH */
 
     always @(irq_unmasked) begin
       spr_picsr = irq_unmasked;
     end
 
   end // trigger is "level"
-  /* verilator lint_off WIDTH */
   else if (OPTION_PIC_TRIGGER == "LATCHED_LEVEL") begin : latched_level
-  /* verilator lint_on WIDTH */
 
     always @(posedge wb_clk) begin
       if (wb_rst)

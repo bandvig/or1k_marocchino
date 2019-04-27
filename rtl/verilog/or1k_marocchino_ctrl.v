@@ -1332,9 +1332,7 @@ module or1k_marocchino_ctrl
                    SPR_DU_ACK   = 4'b1000;
 
   generate
-  /* verilator lint_off WIDTH */
   if (FEATURE_DEBUGUNIT != "NONE") begin : du_enabled
-  /* verilator lint_on WIDTH */
 
     /* Generate answers to Debug System */
 

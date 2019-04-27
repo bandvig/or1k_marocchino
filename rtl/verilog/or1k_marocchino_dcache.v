@@ -741,9 +741,7 @@ module or1k_marocchino_dcache
 
   // LRU calculator
   generate
-  /* verilator lint_off WIDTH */
   if (OPTION_DCACHE_WAYS >= 2) begin : gen_u_lru
-  /* verilator lint_on WIDTH */
     or1k_marocchino_cache_lru
     #(
       .NUMWAYS(OPTION_DCACHE_WAYS) // DCACHE_LRU
@@ -819,9 +817,7 @@ module or1k_marocchino_dcache
 
 
   generate
-  /* verilator lint_off WIDTH */
   if (OPTION_DCACHE_SNOOP != "NONE") begin : st_ram
-  /* verilator lint_on WIDTH */
 
     genvar sw1;
 
