@@ -27,6 +27,7 @@ module or1k_marocchino_cpu
   parameter OPTION_OPERAND_WIDTH = 32,
   // temporary:
   parameter OPTION_ORFPX64A32_ABI       = "GCC5", // "GCC9" / "GCC5"
+  parameter OPTION_FTOI_ROUNDING        = "CPP", // "CPP" (force toward zero; default) / "IEEE" (by rounding mode bits from FPCSR)
   // data cache
   parameter OPTION_DCACHE_BLOCK_WIDTH   = 5,
   parameter OPTION_DCACHE_SET_WIDTH     = 8,
@@ -1659,7 +1660,11 @@ module or1k_marocchino_cpu
   //---------//
   // FPU3264 //
   //---------//
-  pfpu_marocchino_top  u_pfpu3264
+  pfpu_marocchino_top
+  #(
+    .OPTION_FTOI_ROUNDING       (OPTION_FTOI_ROUNDING) // FPU3264
+  )
+  u_pfpu3264
   (
     // clock & reset
     .cpu_clk                    (cpu_clk), // FPU3264
@@ -1974,7 +1979,7 @@ module or1k_marocchino_cpu
     if (cpu_rst)
       wrbk_rfdx_en <= 1'b1; // at reset
     else if (~wrbk_rfdx_en)
-      wrbk_rfdx_en <= ctrl_branch_exception; // as done of switching to exception / interrupt 
+      wrbk_rfdx_en <= ctrl_branch_exception; // as done of switching to exception / interrupt
     else if (padv_wrbk)
       wrbk_rfdx_en <= exec_rfdx_en; // at Write-Bacl advance
   end // at cpu clock
