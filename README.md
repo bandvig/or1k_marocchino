@@ -15,7 +15,7 @@ The core:
 It is written in Verilog HDL.
 
 This repository only contains the IP source code and some documentation. For
-a verification environment, please see other projects.
+a verification environment, please see other projects.  See some details below.
 
 ## License
 
@@ -36,6 +36,29 @@ details please see the [LICENSE](./LICENSE) file or http://juliusbaxter.net/ohdl
  10) Don’t include files if you don’t use things from inclusions
  11) Don’t use timescale (inherited from mor1kx)
  12) In general: try to keep nice appearance of MAROCCHINO sources by following the format of already written code
+
+## Testing and Continuous Integration
+
+A CPU core cannot be trusted without a full set of verification testing.  The
+`or1k_marocchino` is constantly verified for correctness with the or1k Continuous
+Integration (CI) suite running in [travis ci](travis-ci.org).  This currently covers:
+
+ - source linting - a `verilator --lint-only` check is run on each commit to
+   ensure there are no code quality issues.
+ - [or1k-tests](https://github.com/openrisc/or1k-tests) - the `or1k-tests` test suite
+   is run against different configurations to check most major instructions,
+   exception handling, caching, timers, interrupts and other features.
+
+   Status: [![Build Status](https://travis-ci.org/openrisc/or1k_marocchino.svg?branch=master)](https://travis-ci.org/openrisc/or1k_marocchino)
+
+In the future we are working on bringing more tests including:
+
+  - softfloat, fpu verification (may not be feasable in CI due to long run times)
+  - Resource utilization regression with yosys synth_intel synth_xilinx
+  - Formal verification with yosys
+  - Verification that each revision can boot differnt OS's **Linux**, **RTMES**
+  - Golden reference `or1ksim` trace comparisons vs verilog model using constrained
+    random inputs.
 
 ## Configuration
 
@@ -135,7 +158,15 @@ such initialization that typically means that something wrong with your testing 
 |FEATURE_MULTICORE|Enable the `coreid` and `numcores` SPR registers|`NONE`|`ENABLED` `NONE`|Linux SMP|
 |FEATURE_FPU|Enable the FPU|`ENABLED`|`n/a`|It presences permanently|
 |OPTION_ORFPX64A32_ABI|ABI variant to support doubles on 32-bits architectures|`GCC5`|`GCC5` `GCC9`|till GCC9 release|
+|OPTION_FTOI_ROUNDING|Select rounding behavior for `lf.ftoi.s(d)` instructions|`CPP`|`CPP` `IEEE`|see note below|
 |FEATURE_BRANCH_PREDICTOR|Select the branch predictor implementation|`GSHARE`|`n/a`|It presences permanently|
+
+**Note 6:** *C/C++ double to integer conversion assumes truncation (rounding `toward zero`).
+The default (`CPP`) value of OPTION_FTOI_ROUNDING forces `toward zero` rounding mode exclusively for
+`lf.ftoi.s(d)` instructions regardless of `rounding mode` bits of FPCSR. While with `IEEE` value
+`lf.ftoi.s(d)` perform conversion in according with `rounding mode` bits of FPCSR. And these bits are
+`nearest-even` rounding mode by default. All other floating point instructions always perform rounding
+in according with `rounding mode` bits of FPCSR.*
 
 ### Exception handling options
 

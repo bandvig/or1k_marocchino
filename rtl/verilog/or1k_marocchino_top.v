@@ -33,6 +33,7 @@ module or1k_marocchino_top
 
   // temporary:
   parameter OPTION_ORFPX64A32_ABI       = "GCC5", // "GCC9" / "GCC5"
+  parameter OPTION_FTOI_ROUNDING        = "CPP", // "CPP" (force toward zero; default) / "IEEE" (by rounding mode bits from FPCSR)
 
   // data cache configuration
   parameter OPTION_DCACHE_BLOCK_WIDTH   =  5,
@@ -297,6 +298,7 @@ module or1k_marocchino_top
     .OPTION_OPERAND_WIDTH             (OPTION_OPERAND_WIDTH), // CPU
     // temporary:
     .OPTION_ORFPX64A32_ABI            (OPTION_ORFPX64A32_ABI), // CPU
+    .OPTION_FTOI_ROUNDING             (OPTION_FTOI_ROUNDING), // CPU
     // data cache
     .OPTION_DCACHE_BLOCK_WIDTH        (OPTION_DCACHE_BLOCK_WIDTH), // CPU
     .OPTION_DCACHE_SET_WIDTH          (OPTION_DCACHE_SET_WIDTH), // CPU
