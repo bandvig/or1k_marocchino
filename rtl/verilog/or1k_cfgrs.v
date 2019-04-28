@@ -117,14 +117,14 @@ module or1k_cfgrs
    /* Version register 2 */
    /* Implementation ID as per:
       http://opencores.org/or1k/OR1K_CPU_Cores#CPU_ID_Table
-      mor1kx breaks up the VR2[23:0] to be 3 8-bit fields
+      Follow to mor1kx VR2[23:0] to be 3 8-bit fields
       23:16 - Major version number
       15:8  - Minor version number
       7:0   - Pipeline implementation identifier (set outside of this module)
    */
-   assign spr_vr2[`OR1K_SPR_VR2_CPUID] = `MOR1KX_CPUID;
-   assign spr_vr2[`OR1K_SPR_VR2_VER] = {`MOR1KX_VERSION_MAJOR,
-                                        `MOR1KX_VERSION_MINOR,
+   assign spr_vr2[`OR1K_SPR_VR2_CPUID] = `OR1K_MAROCCHINO_CPUID;
+   assign spr_vr2[`OR1K_SPR_VR2_VER] = {`OR1K_MAROCCHINO_VERSION_MAJOR,
+                                        `OR1K_MAROCCHINO_VERSION_MINOR,
                                         8'd0};
 
    /* Currently supporting OR1K version 1.1 rev0 */
