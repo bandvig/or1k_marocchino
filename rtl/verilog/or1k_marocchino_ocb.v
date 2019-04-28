@@ -98,9 +98,7 @@ module or1k_marocchino_ocb
 
   // "OCB is empty" flag
   generate
-  // verilator lint_off WIDTH
   if (EMPTY_FLAG != "NONE") begin : ocb_empty_flag_enabled
-  // verilator lint_on WIDTH
     assign empty_o = ptr_curr[0];
   end
   else begin : ocb_empty_flag_disabled
@@ -111,9 +109,7 @@ module or1k_marocchino_ocb
   // "OCB is full" flag
   //  # no more availaible taps, pointer is out of range
   generate
-  // verilator lint_off WIDTH
   if (FULL_FLAG != "NONE") begin : ocb_full_flag_enabled
-  // verilator lint_on WIDTH
     assign full_o = ptr_curr[NUM_TAPS];
   end
   else begin : ocb_full_flag_disabled
@@ -296,9 +292,7 @@ module or1k_marocchino_ocb_miss
   // "OCB is full" flag
   //  # no more availaible taps, pointer is out of range
   generate
-  // verilator lint_off WIDTH
   if (FULL_FLAG != "NONE") begin : ocb_miss_full_flag_enabled
-  // verilator lint_on WIDTH
     reg full_r;
     // ---
     always @(posedge clk) begin
@@ -1210,9 +1204,7 @@ module or1k_marocchino_ocbuff_miss
 
   // "OCB is full" flag
   generate
-  // verilator lint_off WIDTH
   if (FULL_FLAG != "NONE") begin : ocb_full_flag_enabled
-  // verilator lint_on WIDTH
 
     reg    full_r;
     assign full_o = full_r;

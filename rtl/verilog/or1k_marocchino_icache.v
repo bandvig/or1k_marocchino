@@ -421,9 +421,7 @@ module or1k_marocchino_icache
 
   // LRU calculator
   generate
-  /* verilator lint_off WIDTH */
   if (OPTION_ICACHE_WAYS >= 2) begin : gen_u_lru
-  /* verilator lint_on WIDTH */
     or1k_marocchino_cache_lru
     #(
       .NUMWAYS(OPTION_ICACHE_WAYS) // ICACHE_LRU

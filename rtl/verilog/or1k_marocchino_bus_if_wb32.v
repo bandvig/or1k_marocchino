@@ -253,9 +253,7 @@ module or1k_marocchino_bus_if_wb32
                    DBUS_PENDING_WBM_REQ = 3'b100;
 
   generate
-  /* verilator lint_off WIDTH */
   if (DRIVER_TYPE == "D_CACHE") begin: dbus_specific
-  /* verilator lint_on WIDTH */
 
     // latch for command type
     reg  cpu_lwa_cmd_r1;
@@ -501,9 +499,7 @@ module or1k_marocchino_bus_if_wb32
 
   // snoop hit for l.swa in multicore machine
   generate
-  /* verilator lint_off WIDTH */
   if ((DRIVER_TYPE == "D_CACHE") && (OPTION_DCACHE_SNOOP != "NONE")) begin: dbus_multi_core
-  /* verilator lint_on WIDTH */
 
     //
     // Latched attributes of snoop event.
@@ -643,9 +639,7 @@ module or1k_marocchino_bus_if_wb32
   //  (b) l.swa from CPU to Wishbone
   // ---
   generate
-  /* verilator lint_off WIDTH */
   if (DRIVER_TYPE == "D_CACHE") begin: dbus_with_atomics
-  /* verilator lint_on WIDTH */
 
     // Clock domain crossing fo pipeline-flush to
     // clean up atomic reservation flag at context switch.

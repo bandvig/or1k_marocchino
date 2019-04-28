@@ -259,14 +259,15 @@
 
 
 // Implementation version defines
-`define MOR1KX_CPUID 8'h01
-// mor1kx breaks up the VR2 version register to be 3 8-bit fields
+//  - cpuid 1 is assigned for mor1kx
+`define OR1K_MAROCCHINO_CPUID 8'h02
+// Follow to mor1kx VR2 version register to be 3 8-bit fields
 // MSB is major version, middle byte is minor version number
 // and final byte is the pipeline identifier.
-`define MOR1KX_VERSION_MAJOR 8'd5
-`define MOR1KX_VERSION_MINOR 8'd0
+`define OR1K_MAROCCHINO_VERSION_MAJOR 8'd1
+`define OR1K_MAROCCHINO_VERSION_MINOR 8'd0
 
 // mor1kx implementation-specific register definitions
-`define MOR1KX_PIPEID_CAPPUCCINO 8'd1
-`define MOR1KX_PIPEID_ESPRESSO   8'd2
-`define MOR1KX_PIPEID_PRONTOESPRESSO 8'd3
+//  - pipeid 1, 2 and 3 are assigned for
+//    mor1kx CAPPUCCINO, ESPRESSO and PRONTOESPRESSO
+`define OR1K_PIPEID_MAROCCHINO 8'd4
