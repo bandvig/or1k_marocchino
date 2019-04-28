@@ -651,18 +651,14 @@ module or1k_marocchino_rsrvs_1clk
   localparam          [(OP_WIDTH-1):0] OP_ZERO     = 0;
   localparam         [(OPC_WIDTH-1):0] OPC_ZERO    = 0;
 
-  // unpack operands: { rfb1, rfa1}
-  //    A1
-  wire   [(OPTION_OPERAND_WIDTH-1):0] dcod_rfa1;
-  assign dcod_rfa1 = dcod_rfxx_i[(OPTION_OPERAND_WIDTH-1):0];
-  //    B1
-  wire   [(OPTION_OPERAND_WIDTH-1):0] dcod_rfb1;
-  assign dcod_rfb1 = dcod_rfxx_i[(2*OPTION_OPERAND_WIDTH-1):OPTION_OPERAND_WIDTH];
 
-  // execute: command and attributes latches
-  reg                   exec_op_any_r;
-  reg  [(OP_WIDTH-1):0] exec_op_r;
-  reg [(OPC_WIDTH-1):0] exec_opc_r;
+  /**** Some forward declarations for EXECUTE stage ****/
+
+
+  // command and attributes latches
+  reg                            exec_op_any_r;
+  reg           [(OP_WIDTH-1):0] exec_op_r;
+  reg          [(OPC_WIDTH-1):0] exec_opc_r;
 
   // flags for in-1clk-unit forwarding multiplexors
   reg  [(DEST_EXTADR_WIDTH-1):0] exec_extadr_r;
@@ -672,13 +668,25 @@ module or1k_marocchino_rsrvs_1clk
   // Advance EXECUTE latches
   wire padv_exec_l = (~exec_op_any_r) |  taking_op_i;
 
+
+  /**** Unpack Inputs and Preliminary Analisys for Hazards ****/
+
+
+  // unpack operands: { rfb1, rfa1}
   // OMAN-to-DECODE hazard id: { dxb1, dxa1 }
-  //  # relative operand A1
-  wire   [(DEST_EXTADR_WIDTH-1):0] omn2dec_extadr_dxa1;
-  assign  omn2dec_extadr_dxa1 = omn2dec_hazards_addrs_i[(DEST_EXTADR_WIDTH-1):0];
-  //  # relative operand B1
-  wire   [(DEST_EXTADR_WIDTH-1):0] omn2dec_extadr_dxb1;
-  assign  omn2dec_extadr_dxb1 = omn2dec_hazards_addrs_i[(2*DEST_EXTADR_WIDTH-1):DEST_EXTADR_WIDTH];
+  //    A1
+  wire [(OPTION_OPERAND_WIDTH-1):0] dcod_rfa1;
+  wire    [(DEST_EXTADR_WIDTH-1):0] omn2dec_extadr_dxa1;
+  //    B1
+  wire [(OPTION_OPERAND_WIDTH-1):0] dcod_rfb1;
+  wire    [(DEST_EXTADR_WIDTH-1):0] omn2dec_extadr_dxb1;
+
+  //    A1
+  assign dcod_rfa1 = dcod_rfxx_i[(OPTION_OPERAND_WIDTH-1):0];
+  assign omn2dec_extadr_dxa1 = omn2dec_hazards_addrs_i[(DEST_EXTADR_WIDTH-1):0];
+  //    B1
+  assign dcod_rfb1 = dcod_rfxx_i[(2*OPTION_OPERAND_WIDTH-1):OPTION_OPERAND_WIDTH];
+  assign omn2dec_extadr_dxb1 = omn2dec_hazards_addrs_i[(2*DEST_EXTADR_WIDTH-1):DEST_EXTADR_WIDTH];
 
   // OMAN-to-DECODE hazard flags: { d2b1, d1b1, d2a1, d1a1 }
   //  # relative operand A1
@@ -700,201 +708,44 @@ module or1k_marocchino_rsrvs_1clk
   wire exe2dec_ff_d1a1 = omn2dec_hazards_flags_i[0] & (omn2dec_extadr_dxa1 == exec_extadr_r);
   wire exe2dec_ff_d1b1 = omn2dec_hazards_flags_i[2] & (omn2dec_extadr_dxb1 == exec_extadr_r);
 
-  // all hazards are resolved
-  wire busy_free_of_hazards;
-
 
   /**** BUSY stage ****/
 
 
   // busy: command and additional attributes
-  reg                   busy_op_any_r;
-  reg  [(OP_WIDTH-1):0] busy_op_r;
-  reg [(OPC_WIDTH-1):0] busy_opc_r;
+  reg                            busy_op_any_r;
+  reg           [(OP_WIDTH-1):0] busy_op_r;
+  reg          [(OPC_WIDTH-1):0] busy_opc_r;
 
-  // flags for in-1clk-unit forwarding multiplexors
+  // busy: for in-1clk-unit forwarding multiplexors
   reg  [(DEST_EXTADR_WIDTH-1):0] busy_extadr_r;
   reg                            busy_1clk_ff_d1a1_r;
   reg                            busy_1clk_ff_d1b1_r;
 
-  // latch command and its attributes
-  always @(posedge cpu_clk) begin
-    if (pipeline_flush_i) begin
-      busy_op_any_r       <= 1'b0; // flush
-      busy_op_r           <= OP_ZERO; // flush
-      busy_opc_r          <= OPC_ZERO; // flush
-      busy_extadr_r       <= EXTADR_ZERO; // flush
-      busy_1clk_ff_d1a1_r <= 1'b0; // flush
-      busy_1clk_ff_d1b1_r <= 1'b0; // flush
-    end
-    else begin
-      // synthesis parallel_case
-      case ({padv_exec_l, padv_rsrvs_i})
-        // keep state
-        2'b00:;
-        // next insn arrived
-        2'b01: begin
-          busy_op_any_r       <= 1'b1;
-          busy_op_r           <= dcod_op_i;
-          busy_opc_r          <= dcod_opc_i;
-          busy_extadr_r       <= dcod_extadr;
-          busy_1clk_ff_d1a1_r <= exe2dec_ff_d1a1;
-          busy_1clk_ff_d1b1_r <= exe2dec_ff_d1b1;
-        end
-        // take free of hazards insn
-        2'b10: begin
-          if (busy_free_of_hazards) begin
-            busy_op_any_r <= 1'b0;
-            busy_op_r     <= OP_ZERO;
-            busy_opc_r    <= OPC_ZERO;
-            busy_extadr_r <= EXTADR_ZERO;
-          end
-          busy_1clk_ff_d1a1_r <= 1'b0;
-          busy_1clk_ff_d1b1_r <= 1'b0;
-        end
-        // pipe advance
-        2'b11: begin
-          if (omn2dec_hazard) begin
-            busy_op_any_r       <= 1'b1;
-            busy_op_r           <= dcod_op_i;
-            busy_opc_r          <= dcod_opc_i;
-            busy_extadr_r       <= dcod_extadr;
-          end
-          busy_1clk_ff_d1a1_r <= 1'b0;
-          busy_1clk_ff_d1b1_r <= 1'b0;
-        end
-      endcase
-    end
-  end // @clock
+  // busy: hazards handling wires and regs
+  //  # relative operand A1
+  reg                            busy_hazard_d1a1_r;
+  reg                            busy_hazard_d2a1_r;
+  reg                            busy_hazard_dxa1_r;
+  reg    [DEST_EXTADR_WIDTH-1:0] busy_extadr_dxa1_r;
+  wire                           busy_dxa1_mux_wrbk;
+  wire                           busy_dxa1_wait_wrbk;
+  //  # relative operand B1
+  reg                            busy_hazard_d1b1_r;
+  reg                            busy_hazard_d2b1_r;
+  reg                            busy_hazard_dxb1_r;
+  reg    [DEST_EXTADR_WIDTH-1:0] busy_extadr_dxb1_r;
+  wire                           busy_dxb1_mux_wrbk;
+  wire                           busy_dxb1_wait_wrbk;
+
+  // all hazards are resolved
+  wire                           busy_free_of_hazards;
+
 
   // output from busy stage
   //  ## unit-is-busy flag
   assign unit_free_o = (~busy_op_any_r);
 
-  // busy: processing hazards wires (and regs) used across whole module
-  // # common for all types of reservation station
-  //  # relative operand A1
-  reg                                 busy_hazard_d1a1_r;
-  reg                                 busy_hazard_d2a1_r;
-  reg                                 busy_hazard_dxa1_r;
-  reg         [DEST_EXTADR_WIDTH-1:0] busy_extadr_dxa1_r;
-  wire                                busy_dxa1_mux_wrbk;
-  wire                                busy_dxa1_wait_wrbk;
-  //  # relative operand B1
-  reg                                 busy_hazard_d1b1_r;
-  reg                                 busy_hazard_d2b1_r;
-  reg                                 busy_hazard_dxb1_r;
-  reg         [DEST_EXTADR_WIDTH-1:0] busy_extadr_dxb1_r;
-  wire                                busy_dxb1_mux_wrbk;
-  wire                                busy_dxb1_wait_wrbk;
-
-  // busy: operands
-  //   ## registers for operands A & B
-  reg      [OPTION_OPERAND_WIDTH-1:0] busy_rfa1_r;
-  reg      [OPTION_OPERAND_WIDTH-1:0] busy_rfb1_r;
-  //   ## multiplexed with forwarded value from Write-Back
-  wire     [OPTION_OPERAND_WIDTH-1:0] busy_rfa1;
-  wire     [OPTION_OPERAND_WIDTH-1:0] busy_rfb1;
-
-  // latches for common part
-  //  # hazard flags relative operand A1
-  always @(posedge cpu_clk) begin
-    if (pipeline_flush_i) begin
-      busy_hazard_d1a1_r <= 1'b0;
-      busy_hazard_d2a1_r <= 1'b0;
-      busy_hazard_dxa1_r <= 1'b0;
-    end
-    else begin
-      // synthesis parallel_case
-      case ({padv_exec_l, padv_rsrvs_i})
-        // just forwarding
-        2'b00: begin
-          if (busy_dxa1_mux_wrbk) begin
-            busy_hazard_d1a1_r <= 1'b0;
-            busy_hazard_d2a1_r <= 1'b0;
-            busy_hazard_dxa1_r <= 1'b0;
-          end
-        end
-        // next insn arrived
-        2'b01: begin
-          busy_hazard_d1a1_r <= omn2dec_hazard_d1a1;
-          busy_hazard_d2a1_r <= omn2dec_hazard_d2a1;
-          busy_hazard_dxa1_r <= omn2dec_hazard_d1a1 | omn2dec_hazard_d2a1;
-        end
-        // take free of hazards insn
-        2'b10: begin
-          if (busy_dxa1_mux_wrbk) begin
-            busy_hazard_d1a1_r <= 1'b0;
-            busy_hazard_d2a1_r <= 1'b0;
-            busy_hazard_dxa1_r <= 1'b0;
-          end
-          else if (busy_1clk_ff_d1a1_r) begin
-            // in-1clk-unit forwarding is impossible
-            // if we are waiting another operand -> restore hazard
-            busy_hazard_d1a1_r <= busy_dxb1_wait_wrbk;
-            busy_hazard_dxa1_r <= busy_dxb1_wait_wrbk;
-          end
-        end
-        // pipe advance
-        2'b11: begin
-          if (omn2dec_hazard) begin
-            busy_hazard_d1a1_r <= omn2dec_hazards_flags_i[0];
-            busy_hazard_d2a1_r <= omn2dec_hazard_d2a1;
-            busy_hazard_dxa1_r <= omn2dec_hazards_flags_i[0] | omn2dec_hazard_d2a1;
-          end
-        end
-      endcase
-    end
-  end // @clock
-  //  # hazard flags relative operand B1
-  always @(posedge cpu_clk) begin
-    if (pipeline_flush_i) begin
-      busy_hazard_d1b1_r <= 1'b0;
-      busy_hazard_d2b1_r <= 1'b0;
-      busy_hazard_dxb1_r <= 1'b0;
-    end
-    else begin
-      // synthesis parallel_case
-      case ({padv_exec_l, padv_rsrvs_i})
-        // just forwarding
-        2'b00: begin
-          if (busy_dxb1_mux_wrbk) begin
-            busy_hazard_d1b1_r <= 1'b0;
-            busy_hazard_d2b1_r <= 1'b0;
-            busy_hazard_dxb1_r <= 1'b0;
-          end
-        end
-        // next insn arrived
-        2'b01: begin
-          busy_hazard_d1b1_r <= omn2dec_hazard_d1b1;
-          busy_hazard_d2b1_r <= omn2dec_hazard_d2b1;
-          busy_hazard_dxb1_r <= omn2dec_hazard_d1b1 | omn2dec_hazard_d2b1;
-        end
-        // take free of hazards insn
-        2'b10: begin
-          if (busy_dxb1_mux_wrbk) begin
-            busy_hazard_d1b1_r <= 1'b0;
-            busy_hazard_d2b1_r <= 1'b0;
-            busy_hazard_dxb1_r <= 1'b0;
-          end
-          else if (busy_1clk_ff_d1b1_r) begin
-            // in-1clk-unit forwarding is impossible
-            // if we are waiting another operand -> restore hazard
-            busy_hazard_d1b1_r <= busy_dxa1_wait_wrbk;
-            busy_hazard_dxb1_r <= busy_dxa1_wait_wrbk;
-          end
-        end
-        // pipe advance
-        2'b11: begin
-          if (omn2dec_hazard) begin
-            busy_hazard_d1b1_r <= omn2dec_hazards_flags_i[2];
-            busy_hazard_d2b1_r <= omn2dec_hazard_d2b1;
-            busy_hazard_dxb1_r <= omn2dec_hazards_flags_i[2] | omn2dec_hazard_d2b1;
-          end
-        end
-      endcase
-    end
-  end // @clock
   //  # hazard resolution extention bits
   //  # they make sence only with rized hazard flags
   always @(posedge cpu_clk) begin
@@ -916,6 +767,140 @@ module or1k_marocchino_rsrvs_1clk
   assign busy_free_of_hazards = ((~busy_hazard_dxa1_r) | (busy_extadr_dxa1_r == wrbk_extadr_i)) &  // BUSY is free of hazadrs
                                 ((~busy_hazard_dxb1_r) | (busy_extadr_dxb1_r == wrbk_extadr_i));   // BUSY is free of hazadrs
 
+  // latches for:
+  //  - command and additional attributes
+  //  - for in-1clk-unit forwarding multiplexors
+  //  - hazards handling wires and regs
+  always @(posedge cpu_clk) begin
+    if (pipeline_flush_i) begin
+      // command and additional attributes
+      busy_op_any_r       <= 1'b0; // flush
+      busy_op_r           <= OP_ZERO; // flush
+      busy_opc_r          <= OPC_ZERO; // flush
+      // for in-1clk-unit forwarding multiplexors
+      busy_extadr_r       <= EXTADR_ZERO; // flush
+      busy_1clk_ff_d1a1_r <= 1'b0; // flush
+      busy_1clk_ff_d1b1_r <= 1'b0; // flush
+      // Dx <-> A1 hazard flags
+      busy_hazard_d1a1_r  <= 1'b0; // flush
+      busy_hazard_d2a1_r  <= 1'b0; // flush
+      busy_hazard_dxa1_r  <= 1'b0; // flush
+      // Dx <-> B1 hazard flags
+      busy_hazard_d1b1_r  <= 1'b0; // flush
+      busy_hazard_d2b1_r  <= 1'b0; // flush
+      busy_hazard_dxb1_r  <= 1'b0; // flush
+    end
+    else begin
+      // synthesis parallel_case
+      case ({padv_exec_l, padv_rsrvs_i})
+        // just resolving hazards
+        2'b00: begin
+          // Dx <-> A1 hazard flags
+          if (busy_dxa1_mux_wrbk) begin
+            busy_hazard_d1a1_r <= 1'b0;
+            busy_hazard_d2a1_r <= 1'b0;
+            busy_hazard_dxa1_r <= 1'b0;
+          end
+          // Dx <-> B1 hazard flags
+          if (busy_dxb1_mux_wrbk) begin
+            busy_hazard_d1b1_r <= 1'b0;
+            busy_hazard_d2b1_r <= 1'b0;
+            busy_hazard_dxb1_r <= 1'b0;
+          end
+        end // just resolving hazards
+
+        // next insn arrived
+        2'b01: begin
+          // command and additional attributes
+          busy_op_any_r       <= 1'b1;
+          busy_op_r           <= dcod_op_i;
+          busy_opc_r          <= dcod_opc_i;
+          // for in-1clk-unit forwarding multiplexors
+          busy_extadr_r       <= dcod_extadr;
+          busy_1clk_ff_d1a1_r <= exe2dec_ff_d1a1;
+          busy_1clk_ff_d1b1_r <= exe2dec_ff_d1b1;
+          // Dx <-> A1 hazard flags
+          busy_hazard_d1a1_r  <= omn2dec_hazard_d1a1;
+          busy_hazard_d2a1_r  <= omn2dec_hazard_d2a1;
+          busy_hazard_dxa1_r  <= omn2dec_hazard_d1a1 | omn2dec_hazard_d2a1;
+          // Dx <-> B1 hazard flags
+          busy_hazard_d1b1_r  <= omn2dec_hazard_d1b1;
+          busy_hazard_d2b1_r  <= omn2dec_hazard_d2b1;
+          busy_hazard_dxb1_r  <= omn2dec_hazard_d1b1 | omn2dec_hazard_d2b1;
+        end // next insn arrived
+
+        // take free of hazards insn
+        2'b10: begin
+          if (busy_free_of_hazards) begin
+            // command and additional attributes
+            busy_op_any_r <= 1'b0;
+            busy_op_r     <= OP_ZERO;
+            busy_opc_r    <= OPC_ZERO;
+            busy_extadr_r <= EXTADR_ZERO;
+          end
+          // in-1clk-unit forwarding become impossible
+          busy_1clk_ff_d1a1_r <= 1'b0;
+          busy_1clk_ff_d1b1_r <= 1'b0;
+          // Dx <-> A1 hazard flags
+          if (busy_dxa1_mux_wrbk) begin
+            busy_hazard_d1a1_r <= 1'b0;
+            busy_hazard_d2a1_r <= 1'b0;
+            busy_hazard_dxa1_r <= 1'b0;
+          end
+          else if (busy_1clk_ff_d1a1_r) begin
+            // in-1clk-unit forwarding become impossible
+            // if we are waiting another operand -> restore hazard
+            busy_hazard_d1a1_r <= busy_dxb1_wait_wrbk;
+            busy_hazard_dxa1_r <= busy_dxb1_wait_wrbk;
+          end
+          // Dx <-> B1 hazard flags
+          if (busy_dxb1_mux_wrbk) begin
+            busy_hazard_d1b1_r <= 1'b0;
+            busy_hazard_d2b1_r <= 1'b0;
+            busy_hazard_dxb1_r <= 1'b0;
+          end
+          else if (busy_1clk_ff_d1b1_r) begin
+            // in-1clk-unit forwarding is impossible
+            // if we are waiting another operand -> restore hazard
+            busy_hazard_d1b1_r <= busy_dxa1_wait_wrbk;
+            busy_hazard_dxb1_r <= busy_dxa1_wait_wrbk;
+          end
+        end // take free of hazards insn
+
+        // pipe advance
+        2'b11: begin
+          if (omn2dec_hazard) begin
+            // command and additional attributes
+            busy_op_any_r       <= 1'b1;
+            busy_op_r           <= dcod_op_i;
+            busy_opc_r          <= dcod_opc_i;
+            busy_extadr_r       <= dcod_extadr;
+            // Dx <-> A1 hazard flags
+            busy_hazard_d1a1_r <= omn2dec_hazards_flags_i[0];
+            busy_hazard_d2a1_r <= omn2dec_hazard_d2a1;
+            busy_hazard_dxa1_r <= omn2dec_hazards_flags_i[0] | omn2dec_hazard_d2a1;
+            // Dx <-> B1 hazard flags
+            busy_hazard_d1b1_r <= omn2dec_hazards_flags_i[2];
+            busy_hazard_d2b1_r <= omn2dec_hazard_d2b1;
+            busy_hazard_dxb1_r <= omn2dec_hazards_flags_i[2] | omn2dec_hazard_d2b1;
+          end
+          // needn't to store in-1clk-unit forwarding flags
+          busy_1clk_ff_d1a1_r <= 1'b0;
+          busy_1clk_ff_d1b1_r <= 1'b0;
+        end // pipe advance
+      endcase
+    end
+  end // @clock
+
+
+  // busy: operands
+  //   ## registers for operands A & B
+  reg  [OPTION_OPERAND_WIDTH-1:0] busy_rfa1_r;
+  reg  [OPTION_OPERAND_WIDTH-1:0] busy_rfb1_r;
+  //   ## multiplexed with forwarded value from Write-Back
+  wire [OPTION_OPERAND_WIDTH-1:0] busy_rfa1;
+  wire [OPTION_OPERAND_WIDTH-1:0] busy_rfb1;
+
   // BUSY stage operands A1 & B1
   always @(posedge cpu_clk) begin
     if (padv_rsrvs_i) begin
@@ -927,6 +912,7 @@ module or1k_marocchino_rsrvs_1clk
       busy_rfb1_r <= busy_rfb1;
     end
   end // @clock
+
   // Forwarding
   //  operand A1
   assign busy_rfa1 =  busy_hazard_d1a1_r ? wrbk_result1_i :
