@@ -148,9 +148,7 @@ module or1k_marocchino_rf
   wire [(RF_DW-1):0] spr_bus_dat_l;
 
   generate
-  /* verilator lint_off WIDTH */
   if ((FEATURE_DEBUGUNIT != "NONE") || (OPTION_RF_NUM_SHADOW_GPR > 0)) begin : spr_aux_enabled
-  /* verilator lint_on WIDTH */
 
     // Registering SPR BUS "write strobe" and "data for write".
     reg               spr_bus_we_r; // DBGU or SHADOW
@@ -208,9 +206,7 @@ module or1k_marocchino_rf
                     SPR_GPRS_ACK     = 5'b10000;
 
   generate
-  /* verilator lint_off WIDTH */
   if (OPTION_RF_NUM_SHADOW_GPR > 0) begin : shadow_enabled
-  /* verilator lint_on WIDTH */
 
     // SPR BUS FSM states
     reg         [4:0] spr_gprS_state;
@@ -346,9 +342,7 @@ module or1k_marocchino_rf
                     SPR_GPR0_ACK     = 5'b10000;
 
   generate
-  /* verilator lint_off WIDTH */
   if (FEATURE_DEBUGUNIT != "NONE") begin : dbgu_enabled
-  /* verilator lint_on WIDTH */
 
     // SPR BUS FSM states
     reg         [4:0] spr_gpr0_state;
