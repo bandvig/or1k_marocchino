@@ -829,9 +829,9 @@ module or1k_marocchino_fetch
   // temporary:
   generate
   if (OPTION_ORFPX64A32_ABI == "GCC9") begin : fpx64a32_abi_gcc9
-    assign fetch_rfa2_adr_o = fetch_insn_o[`OR1K_RA_SELECT] + (fetch_insn_o[`OR1K_RA_SELECT] > 15 ? 2'd2 : 2'd1); // ORFPX64A32 ABI GCC9
-    assign fetch_rfb2_adr_o = fetch_insn_o[`OR1K_RB_SELECT] + (fetch_insn_o[`OR1K_RB_SELECT] > 15 ? 2'd2 : 2'd1); // ORFPX64A32 ABI GCC9
-    assign fetch_rfd2_adr_o = fetch_insn_o[`OR1K_RD_SELECT] + (fetch_insn_o[`OR1K_RD_SELECT] > 15 ? 2'd2 : 2'd1); // ORFPX64A32 ABI GCC9
+    assign fetch_rfa2_adr_o = fetch_insn_o[`OR1K_RA_SELECT] + (fetch_insn_o[`OR1K_RA2_OFFSET_SELECT] ? 2'd2 : 2'd1); // ORFPX64A32 ABI GCC9
+    assign fetch_rfb2_adr_o = fetch_insn_o[`OR1K_RB_SELECT] + (fetch_insn_o[`OR1K_RB2_OFFSET_SELECT] ? 2'd2 : 2'd1); // ORFPX64A32 ABI GCC9
+    assign fetch_rfd2_adr_o = fetch_insn_o[`OR1K_RD_SELECT] + (fetch_insn_o[`OR1K_RD2_OFFSET_SELECT] ? 2'd2 : 2'd1); // ORFPX64A32 ABI GCC9
   end
   else begin : fpx64a32_abi_gcc5
     assign fetch_rfa2_adr_o = fetch_insn_o[`OR1K_RA_SELECT] + 1'b1; // ORFPX64A32 ABI GCC5

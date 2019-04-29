@@ -342,8 +342,7 @@ module or1k_marocchino_decode
 
   // --- FPU3264 arithmetic part ---
   //  # tmp skeleton
-  wire op_fpxx_arith_t = (~fetch_insn_i[3]) &        // arithmetic operation
-                         (~(|fetch_insn_i[10:8]));   // all reserved bits are zeros
+  wire op_fpxx_arith_t = (~fetch_insn_i[3]);         // arithmetic operation
   //  # for further legality detection
   wire op_fpxx_arith_l = op_fpxx_arith_t & (fetch_insn_i[2:0] < 3'd6);
   //  # a legal FPU
@@ -369,7 +368,6 @@ module or1k_marocchino_decode
   // --- FPU3264 comparison part ---
   //  # for further legality detection
   wire op_fpxx_cmp_l = fetch_insn_i[3] &          // comparison operation
-                       (~(|fetch_insn_i[10:8])) & // all reserved bits are zeros
                        (fetch_insn_i[2:0] < 3'd7);
   //  # directly for FPU32 execution unit
   wire op_fpxx_cmp = op_fpxx_cmp_l & (opc_insn == `OR1K_OPCODE_FPU);
