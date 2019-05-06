@@ -339,16 +339,26 @@ module or1k_marocchino_decode
    (((op_alu & (opc_alu == `OR1K_ALU_OPC_AND)) | (opc_insn == `OR1K_OPCODE_ANDI)) ? 4'b1000 :
                                                                                     4'b0000));
 
+  // --- FPU3264 common part ---
+  wire op_fpxx = (opc_insn == `OR1K_OPCODE_FPU);
+
+  // --- FP64 specific part ---
+  //  # directly for FPU3264 execution unit
+  wire op_fp64bit = fetch_insn_i[`OR1K_FPUOP_DOUBLE_BIT];
+  //  # check legality of A1/B1/D1 addresses: they must be < r30
+  wire op_fp64_rfa1_adr_l = ~(&fetch_rfa1_adr_i[OPTION_RF_ADDR_WIDTH-1:1]);
+  wire op_fp64_rfb1_adr_l = ~(&fetch_rfb1_adr_i[OPTION_RF_ADDR_WIDTH-1:1]);
+  wire op_fp64_rfd1_adr_l = ~(&fetch_rfd1_adr_i[OPTION_RF_ADDR_WIDTH-1:1]);
 
   // --- FPU3264 arithmetic part ---
   //  # tmp skeleton
-  wire op_fpxx_arith_t = (~fetch_insn_i[3]);         // arithmetic operation
+  wire op_fpxx_arith_t = (~fetch_insn_i[3]); // arithmetic operation
   //  # for further legality detection
-  wire op_fpxx_arith_l = op_fpxx_arith_t & (fetch_insn_i[2:0] < 3'd6);
+  wire op_fpxx_arith_l = op_fpxx_arith_t & (fetch_insn_i[2:0] < 3'd6) &
+                         ((~op_fp64bit) |
+                          (op_fp64_rfa1_adr_l & op_fp64_rfb1_adr_l & op_fp64_rfd1_adr_l));
   //  # a legal FPU
-  wire op_fpxx_arith = op_fpxx_arith_l & (opc_insn == `OR1K_OPCODE_FPU);
-  //  # directly for FPU3264 execution unit
-  wire op_fp64_arith = fetch_insn_i[`OR1K_FPUOP_DOUBLE_BIT];
+  wire op_fpxx_arith = op_fpxx_arith_l & op_fpxx;
   // fpu arithmetic opc:
   // ===================
   // 000 = add
@@ -357,20 +367,19 @@ module or1k_marocchino_decode
   // 011 = divide
   // 100 = i2f
   // 101 = f2i
-  wire op_fpxx_add = op_fpxx_arith_t & (fetch_insn_i[2:0] == 3'd0) & (opc_insn == `OR1K_OPCODE_FPU);
-  wire op_fpxx_sub = op_fpxx_arith_t & (fetch_insn_i[2:0] == 3'd1) & (opc_insn == `OR1K_OPCODE_FPU);
-  wire op_fpxx_mul = op_fpxx_arith_t & (fetch_insn_i[2:0] == 3'd2) & (opc_insn == `OR1K_OPCODE_FPU);
-  wire op_fpxx_div = op_fpxx_arith_t & (fetch_insn_i[2:0] == 3'd3) & (opc_insn == `OR1K_OPCODE_FPU);
-  wire op_fpxx_i2f = op_fpxx_arith_t & (fetch_insn_i[2:0] == 3'd4) & (opc_insn == `OR1K_OPCODE_FPU);
-  wire op_fpxx_f2i = op_fpxx_arith_t & (fetch_insn_i[2:0] == 3'd5) & (opc_insn == `OR1K_OPCODE_FPU);
-
+  wire op_fpxx_add = op_fpxx_arith_t & (fetch_insn_i[2:0] == 3'd0) & op_fpxx;
+  wire op_fpxx_sub = op_fpxx_arith_t & (fetch_insn_i[2:0] == 3'd1) & op_fpxx;
+  wire op_fpxx_mul = op_fpxx_arith_t & (fetch_insn_i[2:0] == 3'd2) & op_fpxx;
+  wire op_fpxx_div = op_fpxx_arith_t & (fetch_insn_i[2:0] == 3'd3) & op_fpxx;
+  wire op_fpxx_i2f = op_fpxx_arith_t & (fetch_insn_i[2:0] == 3'd4) & op_fpxx;
+  wire op_fpxx_f2i = op_fpxx_arith_t & (fetch_insn_i[2:0] == 3'd5) & op_fpxx;
 
   // --- FPU3264 comparison part ---
   //  # for further legality detection
-  wire op_fpxx_cmp_l = fetch_insn_i[3] &          // comparison operation
-                       (fetch_insn_i[2:0] < 3'd7);
+  wire op_fpxx_cmp_l = fetch_insn_i[3] & (fetch_insn_i[2:0] < 3'd7) &
+                       ((~op_fp64bit) | (op_fp64_rfa1_adr_l & op_fp64_rfb1_adr_l));
   //  # directly for FPU32 execution unit
-  wire op_fpxx_cmp = op_fpxx_cmp_l & (opc_insn == `OR1K_OPCODE_FPU);
+  wire op_fpxx_cmp = op_fpxx_cmp_l & op_fpxx;
   // fpu comparison opc:
   // ===================
   // Ordered:
@@ -570,14 +579,14 @@ module or1k_marocchino_decode
           attr_op_1clk        = 1'b0;
           if (op_fpxx_arith_l) begin
             attr_rfa1_req = 1'b1;
-            attr_rfa2_req = op_fpxx_arith_l & fetch_insn_i[`OR1K_FPUOP_DOUBLE_BIT];
+            attr_rfa2_req = op_fp64bit;
             if ((fetch_insn_i[2:0] == 3'd4) | (fetch_insn_i[2:0] == 3'd5)) begin // rD <- conv(rA)
               attr_rfb1_req = 1'b0;
               attr_rfb2_req = 1'b0;
             end
             else begin // rD <- rA op rB
-              attr_rfb1_req  = 1'b1;
-              attr_rfb2_req = op_fpxx_arith_l & fetch_insn_i[`OR1K_FPUOP_DOUBLE_BIT];
+              attr_rfb1_req = 1'b1;
+              attr_rfb2_req = op_fp64bit;
             end
             attr_rfd1_we = 1'b1;
           end
@@ -587,8 +596,8 @@ module or1k_marocchino_decode
             attr_rfb1_req = 1'b1;
             attr_rfd1_we  = 1'b0;
             // for FPU64
-            attr_rfa2_req = fetch_insn_i[`OR1K_FPUOP_DOUBLE_BIT]; // SR[F] <- (rA compare rB)
-            attr_rfb2_req = fetch_insn_i[`OR1K_FPUOP_DOUBLE_BIT]; // SR[F] <- (rA compare rB)
+            attr_rfa2_req = op_fp64bit; // SR[F] <- (rA compare rB)
+            attr_rfb2_req = op_fp64bit; // SR[F] <- (rA compare rB)
           end
           else begin
             // no legal FPU instruction
@@ -810,7 +819,7 @@ module or1k_marocchino_decode
       dcod_op_push_wrbk_o <= an_except_fd | op_nop | op_rfe | op_msync;
       // for correct tracking data dependacy
       dcod_rfd1_we_o      <= attr_rfd1_we;
-      dcod_rfd2_we_o      <= op_fpxx_arith & op_fp64_arith;
+      dcod_rfd2_we_o      <= op_fpxx_arith & op_fp64bit;
       dcod_flag_we_o      <= op_setflag | op_fpxx_cmp | (opc_insn == `OR1K_OPCODE_SWA);
     end
     else if (padv_exec_i) begin
@@ -885,7 +894,7 @@ module or1k_marocchino_decode
       dcod_op_div_unsigned_o    <= op_div_unsigned;
       // FPU3264 arithmetic part
       dcod_op_fpxx_arith_o      <= op_fpxx_arith;
-      dcod_op_fp64_arith_o      <= op_fp64_arith;
+      dcod_op_fp64_arith_o      <= op_fp64bit;
       dcod_op_fpxx_add_o        <= op_fpxx_add;
       dcod_op_fpxx_sub_o        <= op_fpxx_sub;
       dcod_op_fpxx_mul_o        <= op_fpxx_mul;

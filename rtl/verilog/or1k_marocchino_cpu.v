@@ -24,9 +24,8 @@
 
 module or1k_marocchino_cpu
 #(
-  parameter OPTION_OPERAND_WIDTH = 32,
+  parameter OPTION_OPERAND_WIDTH        = 32,
   // temporary:
-  parameter OPTION_ORFPX64A32_ABI       = "GCC5", // "GCC9" / "GCC5"
   parameter OPTION_FTOI_ROUNDING        = "CPP", // "CPP" (force toward zero; default) / "IEEE" (by rounding mode bits from FPCSR)
   // data cache
   parameter OPTION_DCACHE_BLOCK_WIDTH   = 5,
@@ -601,8 +600,6 @@ module or1k_marocchino_cpu
   #(
     .OPTION_OPERAND_WIDTH             (OPTION_OPERAND_WIDTH), // FETCH
     .OPTION_RF_ADDR_WIDTH             (OPTION_RF_ADDR_WIDTH), // FETCH
-    // temporary:
-    .OPTION_ORFPX64A32_ABI            (OPTION_ORFPX64A32_ABI), // FETCH
     // branch predictor parameters
     .GSHARE_BITS_NUM                  (GSHARE_BITS_NUM), // FETCH
     // ICACHE configuration
