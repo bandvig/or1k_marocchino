@@ -169,8 +169,8 @@ module or1k_marocchino_decode
   output reg                            dcod_op_fpxx_f2i_o, // to FPU3264_ARITH
 
   // FPU-64 comparison part
-  output reg                            dcod_op_fpxx_cmp_o,
-  output reg                      [3:0] dcod_opc_fpxx_cmp_o,
+  output reg                                   dcod_op_fpxx_cmp_o,
+  output reg [`OR1K_FPUOP_GENERIC_CMP_WIDTH:0] dcod_opc_fpxx_cmp_o, // {unordered_bit, generic_opc}: re-packed here
 
   // Combined for FPXX_RSRVS
   output reg                            dcod_op_fpxx_any_o,
@@ -345,18 +345,12 @@ module or1k_marocchino_decode
   // --- FP64 specific part ---
   //  # directly for FPU3264 execution unit
   wire op_fp64bit = fetch_insn_i[`OR1K_FPUOP_DOUBLE_BIT];
-  //  # check legality of A1/B1/D1 addresses: they must be < r30
-  wire op_fp64_rfa1_adr_l = ~(&fetch_rfa1_adr_i[OPTION_RF_ADDR_WIDTH-1:1]);
-  wire op_fp64_rfb1_adr_l = ~(&fetch_rfb1_adr_i[OPTION_RF_ADDR_WIDTH-1:1]);
-  wire op_fp64_rfd1_adr_l = ~(&fetch_rfd1_adr_i[OPTION_RF_ADDR_WIDTH-1:1]);
 
   // --- FPU3264 arithmetic part ---
   //  # tmp skeleton
   wire op_fpxx_arith_t = (~fetch_insn_i[3]); // arithmetic operation
   //  # for further legality detection
-  wire op_fpxx_arith_l = op_fpxx_arith_t & (fetch_insn_i[2:0] < 3'd6) &
-                         ((~op_fp64bit) |
-                          (op_fp64_rfa1_adr_l & op_fp64_rfb1_adr_l & op_fp64_rfd1_adr_l));
+  wire op_fpxx_arith_l = op_fpxx_arith_t & (fetch_insn_i[2:0] < 3'd6);
   //  # a legal FPU
   wire op_fpxx_arith = op_fpxx_arith_l & op_fpxx;
   // fpu arithmetic opc:
@@ -376,8 +370,7 @@ module or1k_marocchino_decode
 
   // --- FPU3264 comparison part ---
   //  # for further legality detection
-  wire op_fpxx_cmp_l = fetch_insn_i[3] & (fetch_insn_i[2:0] < 3'd7) &
-                       ((~op_fp64bit) | (op_fp64_rfa1_adr_l & op_fp64_rfb1_adr_l));
+  wire op_fpxx_cmp_l = fetch_insn_i[3] & (fetch_insn_i[2:0] < 3'd7);
   //  # directly for FPU32 execution unit
   wire op_fpxx_cmp = op_fpxx_cmp_l & op_fpxx;
   // fpu comparison opc:
@@ -397,9 +390,10 @@ module or1k_marocchino_decode
   //   1100 = LT
   //   1101 = LE
   //   1110 = UN
-  wire [3:0] opc_fpxx_cmp = {fetch_insn_i[5], fetch_insn_i[2:0]};
-  //               unordered ^^^^^^^^^^^^^^^  ^^^^^^^^^^^^^^^^^
-  //                                  ordered |||||||||||||||||
+  wire [`OR1K_FPUOP_GENERIC_CMP_WIDTH:0] opc_fpxx_cmp;
+  // {unordered_bit, generic_opc}: re-packing
+  assign opc_fpxx_cmp = {fetch_insn_i[`OR1K_FPUOP_UNORDERED_CMP_BIT],
+                         fetch_insn_i[`OR1K_FPUOP_GENERIC_CMP_SELECT]};
 
   // Immediate for MF(T)SPR, LOADs and STOREs
   wire [`OR1K_IMM_WIDTH-1:0] imm16;

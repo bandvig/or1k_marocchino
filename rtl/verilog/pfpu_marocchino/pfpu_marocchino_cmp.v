@@ -52,8 +52,8 @@ module pfpu_marocchino_cmp
   input              padv_wrbk_i,            // advance output latches
   input              grant_wrbk_to_fpxx_cmp_i,
   // command
-  input              op_fpxx_cmp_i,
-  input        [3:0] opc_fpxx_cmp_i,
+  input                                   op_fpxx_cmp_i,
+  input [`OR1K_FPUOP_GENERIC_CMP_WIDTH:0] opc_fpxx_cmp_i, // {unordered_bit, generic_opc}: re-packed in DECODE
   // data related to operand A
   input              signa_i,
   input              opa_0_i,
@@ -92,14 +92,22 @@ module pfpu_marocchino_cmp
        s??o_name - "S"tage number "??", "O"utput
        s??t_name - "S"tage number "??", "T"emporary (internally)
   */
-
+  
+  // Full length ordered comparison opcodes
+  localparam [`OR1K_FPUOP_WIDTH-1:0] FPCOP_SFEQ = `OR1K_FPCOP_SFEQ;
+  localparam [`OR1K_FPUOP_WIDTH-1:0] FPCOP_SFNE = `OR1K_FPCOP_SFNE;
+  localparam [`OR1K_FPUOP_WIDTH-1:0] FPCOP_SFGT = `OR1K_FPCOP_SFGT;
+  localparam [`OR1K_FPUOP_WIDTH-1:0] FPCOP_SFGE = `OR1K_FPCOP_SFGE;
+  localparam [`OR1K_FPUOP_WIDTH-1:0] FPCOP_SFLT = `OR1K_FPCOP_SFLT;
+  localparam [`OR1K_FPUOP_WIDTH-1:0] FPCOP_SFLE = `OR1K_FPCOP_SFLE;
+  
   // For ordered / unordered comparison
-  localparam [2:0] FP_OPC_SFEQ = 3'b000;
-  localparam [2:0] FP_OPC_SFNE = 3'b001;
-  localparam [2:0] FP_OPC_SFGT = 3'b010;
-  localparam [2:0] FP_OPC_SFGE = 3'b011;
-  localparam [2:0] FP_OPC_SFLT = 3'b100;
-  localparam [2:0] FP_OPC_SFLE = 3'b101;
+  localparam [`OR1K_FPUOP_GENERIC_CMP_WIDTH-1:0] GENERIC_SFEQ = FPCOP_SFEQ[`OR1K_FPUOP_GENERIC_CMP_SELECT];
+  localparam [`OR1K_FPUOP_GENERIC_CMP_WIDTH-1:0] GENERIC_SFNE = FPCOP_SFNE[`OR1K_FPUOP_GENERIC_CMP_SELECT];
+  localparam [`OR1K_FPUOP_GENERIC_CMP_WIDTH-1:0] GENERIC_SFGT = FPCOP_SFGT[`OR1K_FPUOP_GENERIC_CMP_SELECT];
+  localparam [`OR1K_FPUOP_GENERIC_CMP_WIDTH-1:0] GENERIC_SFGE = FPCOP_SFGE[`OR1K_FPUOP_GENERIC_CMP_SELECT];
+  localparam [`OR1K_FPUOP_GENERIC_CMP_WIDTH-1:0] GENERIC_SFLT = FPCOP_SFLT[`OR1K_FPUOP_GENERIC_CMP_SELECT];
+  localparam [`OR1K_FPUOP_GENERIC_CMP_WIDTH-1:0] GENERIC_SFLE = FPCOP_SFLE[`OR1K_FPUOP_GENERIC_CMP_SELECT];
 
   // Comparison pipe controls
   //  ## Write-Back tacking comparison result
@@ -117,8 +125,8 @@ module pfpu_marocchino_cmp
 
   /**** Stage #1: just output latches ****/
 
-  reg  [2:0] s1o_opc_fpxx_cmp_any; // ordered / unordered part
-  reg        s1o_opc_fpxx_cmp_urd; // do unordered comparison flag
+  reg  [`OR1K_FPUOP_GENERIC_CMP_WIDTH-1:0] s1o_generic_cmp_opc; // ordered / unordered part
+  reg                                      s1o_unordered_cmp_bit; // do unordered comparison flag
   // data related to operand A
   reg        s1o_signa;
   reg        s1o_opa_0;
@@ -138,8 +146,8 @@ module pfpu_marocchino_cmp
   // ---
   always @(posedge cpu_clk) begin
     if (s1_adv) begin
-      s1o_opc_fpxx_cmp_any <= opc_fpxx_cmp_i[2:0];
-      s1o_opc_fpxx_cmp_urd <= opc_fpxx_cmp_i[3];
+      s1o_generic_cmp_opc   <= opc_fpxx_cmp_i[`OR1K_FPUOP_GENERIC_CMP_SELECT];
+      s1o_unordered_cmp_bit <= opc_fpxx_cmp_i[`OR1K_FPUOP_GENERIC_CMP_WIDTH]; // unordered_bit, re-packed in DECODE
       // data related to operand A
       s1o_signa <= signa_i;
       s1o_opa_0 <= opa_0_i;
@@ -184,12 +192,12 @@ module pfpu_marocchino_cmp
   //  An operand is either sNaN or NaN
   wire anan    = s1o_qnan | s1o_snan;
   //  Compatison is ordered/unordered EQ/NE
-  wire eqne    = (s1o_opc_fpxx_cmp_any == FP_OPC_SFEQ) |
-                 (s1o_opc_fpxx_cmp_any == FP_OPC_SFNE);
+  wire eqne    = (s1o_generic_cmp_opc == GENERIC_SFEQ) |
+                 (s1o_generic_cmp_opc == GENERIC_SFNE);
   // Comparison is invalid if:
   //  1) sNaN is an operand of ordered/unordered EQ/NE comparison
   //  2)  NaN is an operand of ordered LT/LE/GT/GE comparison
-  wire inv_cmp = (s1o_snan & eqne) | (anan & (~eqne) & (~s1o_opc_fpxx_cmp_urd));
+  wire inv_cmp = (eqne & s1o_snan) | ((~eqne) & anan & (~s1o_unordered_cmp_bit));
 
 
   ////////////////////////////////////////////////////////////////////////
@@ -253,19 +261,19 @@ module pfpu_marocchino_cmp
 
   ////////////////////////////////////////////////////////////////////////
   // Comparison cmp_flag generation
-  reg  cmp_res_any; // ordered / unordered part
-  wire cmp_res = (s1o_opc_fpxx_cmp_urd & anan) | cmp_res_any;
+  reg  generic_cmp_flag; // ordered / unordered part
+  wire cmp_flag = (s1o_unordered_cmp_bit & anan) | generic_cmp_flag;
   // ---
-  always @(altb or blta or aeqb or s1o_opc_fpxx_cmp_any) begin
+  always @(altb or blta or aeqb or s1o_generic_cmp_opc) begin
     // synthesis parallel_case
-    case (s1o_opc_fpxx_cmp_any)
-      FP_OPC_SFEQ: cmp_res_any = aeqb;
-      FP_OPC_SFNE: cmp_res_any = ~aeqb;
-      FP_OPC_SFGT: cmp_res_any = blta & ~aeqb;
-      FP_OPC_SFGE: cmp_res_any = blta | aeqb;
-      FP_OPC_SFLT: cmp_res_any = altb & ~aeqb;
-      FP_OPC_SFLE: cmp_res_any = altb | aeqb;
-      default:     cmp_res_any = 1'b0;
+    case (s1o_generic_cmp_opc)
+      GENERIC_SFEQ: generic_cmp_flag = aeqb;
+      GENERIC_SFNE: generic_cmp_flag = ~aeqb;
+      GENERIC_SFGT: generic_cmp_flag = blta & ~aeqb;
+      GENERIC_SFGE: generic_cmp_flag = blta | aeqb;
+      GENERIC_SFLT: generic_cmp_flag = altb & ~aeqb;
+      GENERIC_SFLE: generic_cmp_flag = altb | aeqb;
+      default:      generic_cmp_flag = 1'b0;
     endcase
   end // always@ *
 
@@ -285,8 +293,8 @@ module pfpu_marocchino_cmp
   // Just before latching
 
   //  # set/slear commands
-  wire s2t_fpxx_flag_set   =  cmp_res;
-  wire s2t_fpxx_flag_clear = ~cmp_res;
+  wire s2t_fpxx_flag_set   =  cmp_flag;
+  wire s2t_fpxx_flag_clear = ~cmp_flag;
   //  # FP32 comparison flags
   wire s2t_fpxx_cmp_inv    = fpu_mask_flags_inv_i & inv_cmp;
   wire s2t_fpxx_cmp_inf    = fpu_mask_flags_inf_i & (s1o_infa | s1o_infb);
