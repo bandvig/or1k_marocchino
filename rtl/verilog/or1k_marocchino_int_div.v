@@ -66,7 +66,7 @@ module or1k_marocchino_int_div
   localparam DIVDW        = OPTION_OPERAND_WIDTH; // short name
   localparam LOG2_DIVDW_2 = 4; // ceil(log2(DIVDW/2)): size of iteration counter
 
-  // common interface for both SERIAL/SRT4 divisors
+  // divider interface
   wire [DIVDW-1:0] s3t_div_result;
   wire             s3o_dbz;
   reg              s3o_div_signed, s3o_div_unsigned;
