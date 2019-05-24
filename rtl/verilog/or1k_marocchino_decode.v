@@ -169,8 +169,8 @@ module or1k_marocchino_decode
   output reg                            dcod_op_fpxx_f2i_o, // to FPU3264_ARITH
 
   // FPU-64 comparison part
-  output reg                            dcod_op_fpxx_cmp_o,
-  output reg                      [2:0] dcod_opc_fpxx_cmp_o,
+  output reg                                   dcod_op_fpxx_cmp_o,
+  output reg [`OR1K_FPUOP_GENERIC_CMP_WIDTH:0] dcod_opc_fpxx_cmp_o, // {unordered_bit, generic_opc}: re-packed here
 
   // Combined for FPXX_RSRVS
   output reg                            dcod_op_fpxx_any_o,
@@ -339,17 +339,20 @@ module or1k_marocchino_decode
    (((op_alu & (opc_alu == `OR1K_ALU_OPC_AND)) | (opc_insn == `OR1K_OPCODE_ANDI)) ? 4'b1000 :
                                                                                     4'b0000));
 
+  // --- FPU3264 common part ---
+  wire op_fpxx = (opc_insn == `OR1K_OPCODE_FPU);
+
+  // --- FP64 specific part ---
+  //  # directly for FPU3264 execution unit
+  wire op_fp64bit = fetch_insn_i[`OR1K_FPUOP_DOUBLE_BIT];
 
   // --- FPU3264 arithmetic part ---
   //  # tmp skeleton
-  wire op_fpxx_arith_t = (~fetch_insn_i[3]) &        // arithmetic operation
-                         (~(|fetch_insn_i[10:8]));   // all reserved bits are zeros
+  wire op_fpxx_arith_t = (~fetch_insn_i[3]); // arithmetic operation
   //  # for further legality detection
   wire op_fpxx_arith_l = op_fpxx_arith_t & (fetch_insn_i[2:0] < 3'd6);
   //  # a legal FPU
-  wire op_fpxx_arith = op_fpxx_arith_l & (opc_insn == `OR1K_OPCODE_FPU);
-  //  # directly for FPU3264 execution unit
-  wire op_fp64_arith = fetch_insn_i[`OR1K_FPUOP_DOUBLE_BIT];
+  wire op_fpxx_arith = op_fpxx_arith_l & op_fpxx;
   // fpu arithmetic opc:
   // ===================
   // 000 = add
@@ -358,31 +361,39 @@ module or1k_marocchino_decode
   // 011 = divide
   // 100 = i2f
   // 101 = f2i
-  wire op_fpxx_add = op_fpxx_arith_t & (fetch_insn_i[2:0] == 3'd0) & (opc_insn == `OR1K_OPCODE_FPU);
-  wire op_fpxx_sub = op_fpxx_arith_t & (fetch_insn_i[2:0] == 3'd1) & (opc_insn == `OR1K_OPCODE_FPU);
-  wire op_fpxx_mul = op_fpxx_arith_t & (fetch_insn_i[2:0] == 3'd2) & (opc_insn == `OR1K_OPCODE_FPU);
-  wire op_fpxx_div = op_fpxx_arith_t & (fetch_insn_i[2:0] == 3'd3) & (opc_insn == `OR1K_OPCODE_FPU);
-  wire op_fpxx_i2f = op_fpxx_arith_t & (fetch_insn_i[2:0] == 3'd4) & (opc_insn == `OR1K_OPCODE_FPU);
-  wire op_fpxx_f2i = op_fpxx_arith_t & (fetch_insn_i[2:0] == 3'd5) & (opc_insn == `OR1K_OPCODE_FPU);
-
+  wire op_fpxx_add = op_fpxx_arith_t & (fetch_insn_i[2:0] == 3'd0) & op_fpxx;
+  wire op_fpxx_sub = op_fpxx_arith_t & (fetch_insn_i[2:0] == 3'd1) & op_fpxx;
+  wire op_fpxx_mul = op_fpxx_arith_t & (fetch_insn_i[2:0] == 3'd2) & op_fpxx;
+  wire op_fpxx_div = op_fpxx_arith_t & (fetch_insn_i[2:0] == 3'd3) & op_fpxx;
+  wire op_fpxx_i2f = op_fpxx_arith_t & (fetch_insn_i[2:0] == 3'd4) & op_fpxx;
+  wire op_fpxx_f2i = op_fpxx_arith_t & (fetch_insn_i[2:0] == 3'd5) & op_fpxx;
 
   // --- FPU3264 comparison part ---
   //  # for further legality detection
-  wire op_fpxx_cmp_l = fetch_insn_i[3] &          // comparison operation
-                       (~(|fetch_insn_i[10:8])) & // all reserved bits are zeros
-                       (fetch_insn_i[2:0] < 3'd6);
+  wire op_fpxx_cmp_l = fetch_insn_i[3] & (fetch_insn_i[2:0] < 3'd7);
   //  # directly for FPU32 execution unit
-  wire op_fpxx_cmp = op_fpxx_cmp_l & (opc_insn == `OR1K_OPCODE_FPU);
+  wire op_fpxx_cmp = op_fpxx_cmp_l & op_fpxx;
   // fpu comparison opc:
   // ===================
-  // 000 = EQ
-  // 001 = NE
-  // 010 = GT
-  // 011 = GE
-  // 100 = LT
-  // 101 = LE
-  wire [2:0] opc_fpxx_cmp = fetch_insn_i[2:0];
-
+  // Ordered:
+  //   0000 = EQ
+  //   0001 = NE
+  //   0010 = GT
+  //   0011 = GE
+  //   0100 = LT
+  //   0101 = LE
+  // Unordered:
+  //   1000 = EQ
+  //   1001 = NE
+  //   1010 = GT
+  //   1011 = GE
+  //   1100 = LT
+  //   1101 = LE
+  //   1110 = UN
+  wire [`OR1K_FPUOP_GENERIC_CMP_WIDTH:0] opc_fpxx_cmp;
+  // {unordered_bit, generic_opc}: re-packing
+  assign opc_fpxx_cmp = {fetch_insn_i[`OR1K_FPUOP_UNORDERED_CMP_BIT],
+                         fetch_insn_i[`OR1K_FPUOP_GENERIC_CMP_SELECT]};
 
   // Immediate for MF(T)SPR, LOADs and STOREs
   wire [`OR1K_IMM_WIDTH-1:0] imm16;
@@ -562,14 +573,14 @@ module or1k_marocchino_decode
           attr_op_1clk        = 1'b0;
           if (op_fpxx_arith_l) begin
             attr_rfa1_req = 1'b1;
-            attr_rfa2_req = op_fpxx_arith_l & fetch_insn_i[`OR1K_FPUOP_DOUBLE_BIT];
+            attr_rfa2_req = op_fp64bit;
             if ((fetch_insn_i[2:0] == 3'd4) | (fetch_insn_i[2:0] == 3'd5)) begin // rD <- conv(rA)
               attr_rfb1_req = 1'b0;
               attr_rfb2_req = 1'b0;
             end
             else begin // rD <- rA op rB
-              attr_rfb1_req  = 1'b1;
-              attr_rfb2_req = op_fpxx_arith_l & fetch_insn_i[`OR1K_FPUOP_DOUBLE_BIT];
+              attr_rfb1_req = 1'b1;
+              attr_rfb2_req = op_fp64bit;
             end
             attr_rfd1_we = 1'b1;
           end
@@ -579,8 +590,8 @@ module or1k_marocchino_decode
             attr_rfb1_req = 1'b1;
             attr_rfd1_we  = 1'b0;
             // for FPU64
-            attr_rfa2_req = fetch_insn_i[`OR1K_FPUOP_DOUBLE_BIT]; // SR[F] <- (rA compare rB)
-            attr_rfb2_req = fetch_insn_i[`OR1K_FPUOP_DOUBLE_BIT]; // SR[F] <- (rA compare rB)
+            attr_rfa2_req = op_fp64bit; // SR[F] <- (rA compare rB)
+            attr_rfb2_req = op_fp64bit; // SR[F] <- (rA compare rB)
           end
           else begin
             // no legal FPU instruction
@@ -802,7 +813,7 @@ module or1k_marocchino_decode
       dcod_op_push_wrbk_o <= an_except_fd | op_nop | op_rfe | op_msync;
       // for correct tracking data dependacy
       dcod_rfd1_we_o      <= attr_rfd1_we;
-      dcod_rfd2_we_o      <= op_fpxx_arith & op_fp64_arith;
+      dcod_rfd2_we_o      <= op_fpxx_arith & op_fp64bit;
       dcod_flag_we_o      <= op_setflag | op_fpxx_cmp | (opc_insn == `OR1K_OPCODE_SWA);
     end
     else if (padv_exec_i) begin
@@ -877,7 +888,7 @@ module or1k_marocchino_decode
       dcod_op_div_unsigned_o    <= op_div_unsigned;
       // FPU3264 arithmetic part
       dcod_op_fpxx_arith_o      <= op_fpxx_arith;
-      dcod_op_fp64_arith_o      <= op_fp64_arith;
+      dcod_op_fp64_arith_o      <= op_fp64bit;
       dcod_op_fpxx_add_o        <= op_fpxx_add;
       dcod_op_fpxx_sub_o        <= op_fpxx_sub;
       dcod_op_fpxx_mul_o        <= op_fpxx_mul;
