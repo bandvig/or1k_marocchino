@@ -32,8 +32,6 @@ module or1k_marocchino_fetch
 #(
   parameter OPTION_OPERAND_WIDTH        = 32,
   parameter OPTION_RF_ADDR_WIDTH        =  5,
-  // temporary:
-  parameter OPTION_ORFPX64A32_ABI       = "GCC5", // "GCC9" / "GCC5"
   // branch predictor parameters
   parameter GSHARE_BITS_NUM             = 10,
   // cache configuration
@@ -146,6 +144,7 @@ module or1k_marocchino_fetch
   */
 
   localparam IFOOW = OPTION_OPERAND_WIDTH; // short name
+  localparam IFRFW = OPTION_RF_ADDR_WIDTH; // short name
 
 
   /**** Stage #1 (IMMU/ICACHE access) registers and wires ****/
@@ -821,24 +820,16 @@ module or1k_marocchino_fetch
   // IFETCH derived outputs //
   //------------------------//
 
-  // operand addresses
+  // A1 / B1 / D1 addresses
   assign fetch_rfa1_adr_o = fetch_insn_o[`OR1K_RA_SELECT];
   assign fetch_rfb1_adr_o = fetch_insn_o[`OR1K_RB_SELECT];
-  // destinaton addresses
   assign fetch_rfd1_adr_o = fetch_insn_o[`OR1K_RD_SELECT];
-  // temporary:
-  generate
-  if (OPTION_ORFPX64A32_ABI == "GCC9") begin : fpx64a32_abi_gcc9
-    assign fetch_rfa2_adr_o = fetch_insn_o[`OR1K_RA_SELECT] + (fetch_insn_o[`OR1K_RA_SELECT] > 15 ? 2'd2 : 2'd1); // ORFPX64A32 ABI GCC9
-    assign fetch_rfb2_adr_o = fetch_insn_o[`OR1K_RB_SELECT] + (fetch_insn_o[`OR1K_RB_SELECT] > 15 ? 2'd2 : 2'd1); // ORFPX64A32 ABI GCC9
-    assign fetch_rfd2_adr_o = fetch_insn_o[`OR1K_RD_SELECT] + (fetch_insn_o[`OR1K_RD_SELECT] > 15 ? 2'd2 : 2'd1); // ORFPX64A32 ABI GCC9
-  end
-  else begin : fpx64a32_abi_gcc5
-    assign fetch_rfa2_adr_o = fetch_insn_o[`OR1K_RA_SELECT] + 1'b1; // ORFPX64A32 ABI GCC5
-    assign fetch_rfb2_adr_o = fetch_insn_o[`OR1K_RB_SELECT] + 1'b1; // ORFPX64A32 ABI GCC5
-    assign fetch_rfd2_adr_o = fetch_insn_o[`OR1K_RD_SELECT] + 1'b1; // ORFPX64A32 ABI GCC5
-  end
-  endgenerate
+  // A2 / B2 / D2 addresses
+  //  # X2 = X1 + (bit_x2_offset ? 2 : 1);
+  //  # implemented as adder with carry input
+  assign fetch_rfa2_adr_o = fetch_insn_o[`OR1K_RA_SELECT] + {{(IFRFW-1){1'b0}},fetch_insn_o[`OR1K_RA2_OFFSET_SELECT]} + 1'b1;
+  assign fetch_rfb2_adr_o = fetch_insn_o[`OR1K_RB_SELECT] + {{(IFRFW-1){1'b0}},fetch_insn_o[`OR1K_RB2_OFFSET_SELECT]} + 1'b1;
+  assign fetch_rfd2_adr_o = fetch_insn_o[`OR1K_RD_SELECT] + {{(IFRFW-1){1'b0}},fetch_insn_o[`OR1K_RD2_OFFSET_SELECT]} + 1'b1;
 
   // Jump/Branch processing
   wire [`OR1K_OPCODE_WIDTH-1:0] opc_insn = fetch_insn_o[`OR1K_OPCODE_SELECT];

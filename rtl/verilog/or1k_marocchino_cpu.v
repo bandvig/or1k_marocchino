@@ -24,9 +24,8 @@
 
 module or1k_marocchino_cpu
 #(
-  parameter OPTION_OPERAND_WIDTH = 32,
+  parameter OPTION_OPERAND_WIDTH        = 32,
   // temporary:
-  parameter OPTION_ORFPX64A32_ABI       = "GCC5", // "GCC9" / "GCC5"
   parameter OPTION_FTOI_ROUNDING        = "CPP", // "CPP" (force toward zero; default) / "IEEE" (by rounding mode bits from FPCSR)
   // data cache
   parameter OPTION_DCACHE_BLOCK_WIDTH   = 5,
@@ -392,38 +391,38 @@ module or1k_marocchino_cpu
 
 
   // FPU3264 arithmetic part
-  wire                              dcod_op_fpxx_arith; // to OMAN and FPU3264_ARITH
-  wire                              dcod_op_fp64_arith; // to OMAN and FPU3264_ARITH
-  wire                              dcod_op_fpxx_add; // to FPU3264_ARITH
-  wire                              dcod_op_fpxx_sub; // to FPU3264_ARITH
-  wire                              dcod_op_fpxx_mul; // to FPU3264_ARITH
-  wire                              dcod_op_fpxx_div; // to FPU3264_ARITH
-  wire                              dcod_op_fpxx_i2f; // to FPU3264_ARITH
-  wire                              dcod_op_fpxx_f2i; // to FPU3264_ARITH
-  wire                              fpxx_arith_valid;
-  wire                              grant_wrbk_to_fpxx_arith;
-  wire                              exec_except_fpxx_arith;
-  wire  [`OR1K_FPCSR_ALLF_SIZE-1:0] wrbk_fpxx_arith_fpcsr;    // only flags
-  wire                              wrbk_fpxx_arith_fpcsr_we; // update FPCSR
-  wire                              wrbk_except_fpxx_arith;   // generate FPx exception by FPx flags
+  wire                                   dcod_op_fpxx_arith; // to OMAN and FPU3264_ARITH
+  wire                                   dcod_op_fp64_arith; // to OMAN and FPU3264_ARITH
+  wire                                   dcod_op_fpxx_add; // to FPU3264_ARITH
+  wire                                   dcod_op_fpxx_sub; // to FPU3264_ARITH
+  wire                                   dcod_op_fpxx_mul; // to FPU3264_ARITH
+  wire                                   dcod_op_fpxx_div; // to FPU3264_ARITH
+  wire                                   dcod_op_fpxx_i2f; // to FPU3264_ARITH
+  wire                                   dcod_op_fpxx_f2i; // to FPU3264_ARITH
+  wire                                   fpxx_arith_valid;
+  wire                                   grant_wrbk_to_fpxx_arith;
+  wire                                   exec_except_fpxx_arith;
+  wire       [`OR1K_FPCSR_ALLF_SIZE-1:0] wrbk_fpxx_arith_fpcsr;    // only flags
+  wire                                   wrbk_fpxx_arith_fpcsr_we; // update FPCSR
+  wire                                   wrbk_except_fpxx_arith;   // generate FPx exception by FPx flags
   // FPU3264 comparison part
-  wire                              dcod_op_fpxx_cmp;
-  wire                        [2:0] dcod_opc_fpxx_cmp;
-  wire                              exec_op_fpxx_cmp;
-  wire                        [2:0] exec_opc_fpxx_cmp;
-  wire                              fpxx_cmp_valid;
-  wire                              grant_wrbk_to_fpxx_cmp;
-  wire                              exec_except_fpxx_cmp;
-  wire                              wrbk_fpxx_flag_set;
-  wire                              wrbk_fpxx_flag_clear;
-  wire                              wrbk_fpxx_cmp_inv;
-  wire                              wrbk_fpxx_cmp_inf;
-  wire                              wrbk_fpxx_cmp_fpcsr_we;
-  wire                              wrbk_except_fpxx_cmp;
+  wire                                   dcod_op_fpxx_cmp;
+  wire [`OR1K_FPUOP_GENERIC_CMP_WIDTH:0] dcod_opc_fpxx_cmp; // {unordered_bit, generic_opc}: re-packed in DECODE
+  wire                                   exec_op_fpxx_cmp;
+  wire [`OR1K_FPUOP_GENERIC_CMP_WIDTH:0] exec_opc_fpxx_cmp; // {unordered_bit, generic_opc}: re-packed in DECODE
+  wire                                   fpxx_cmp_valid;
+  wire                                   grant_wrbk_to_fpxx_cmp;
+  wire                                   exec_except_fpxx_cmp;
+  wire                                   wrbk_fpxx_flag_set;
+  wire                                   wrbk_fpxx_flag_clear;
+  wire                                   wrbk_fpxx_cmp_inv;
+  wire                                   wrbk_fpxx_cmp_inf;
+  wire                                   wrbk_fpxx_cmp_fpcsr_we;
+  wire                                   wrbk_except_fpxx_cmp;
   // FPU3264 reservationstation controls
-  wire                              dcod_op_fpxx_any;
-  wire                              fpxx_free;
-  wire                              fpxx_taking_op;
+  wire                                   dcod_op_fpxx_any;
+  wire                                   fpxx_free;
+  wire                                   fpxx_taking_op;
 
 
   wire [OPTION_OPERAND_WIDTH-1:0] sbuf_eear;
@@ -601,8 +600,6 @@ module or1k_marocchino_cpu
   #(
     .OPTION_OPERAND_WIDTH             (OPTION_OPERAND_WIDTH), // FETCH
     .OPTION_RF_ADDR_WIDTH             (OPTION_RF_ADDR_WIDTH), // FETCH
-    // temporary:
-    .OPTION_ORFPX64A32_ABI            (OPTION_ORFPX64A32_ABI), // FETCH
     // branch predictor parameters
     .GSHARE_BITS_NUM                  (GSHARE_BITS_NUM), // FETCH
     // ICACHE configuration
@@ -1550,8 +1547,6 @@ module or1k_marocchino_cpu
 
   //---------------------------------------------//
   // Reservation station for FPU3264             //
-  //   # 32/64-bits FP arithmetic                //
-  //   # 64-bits FP comparison                   //
   //---------------------------------------------//
   // run fp3264 arithmetic
   wire exec_op_fpxx_add, exec_op_fpxx_sub, exec_op_fpxx_mul,
@@ -1563,11 +1558,11 @@ module or1k_marocchino_cpu
 
   // OPC layout for multi-clocks reservation station
   wire exec_op_fp64_arith;
-  //  # double precision bit:                                1
-  //  # fp64 comparison variant:                             3
-  //  # ------------------------------------------------------
-  //  # overall:                                             4
-  localparam FPU_OPC_WIDTH = 4;
+  //  # double precision bit:                                 1
+  //  # comparison variant {unordered_bit, generic_opc}
+  //    re-packed in DECODE: (`OR1K_FPUOP_GENERIC_CMP_WIDTH + 1) 
+  //  # --------------------------------------------------------
+  localparam FPU_OPC_WIDTH = 1 + (`OR1K_FPUOP_GENERIC_CMP_WIDTH + 1);
 
   // FPU input operands
   wire [(OPTION_OPERAND_WIDTH-1):0] exec_fpxx_a1;
