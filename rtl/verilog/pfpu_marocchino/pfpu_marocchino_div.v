@@ -167,7 +167,7 @@ module r4div_fract58
   // magnitude for digits depended on denominator
   wire       lsb_magn_2or3 = ~one_den_r[N-2];
   // {sign[0:0], magn[1:0]}
-  always @(trunc_rem or one_den_r[N-2]) begin
+  always @(trunc_rem or lsb_magn_2or3) begin
     // synthesis parallel_case
     casez (trunc_rem)
       4'b0000: q_digit = 3'b000; //  0
