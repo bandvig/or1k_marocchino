@@ -63,113 +63,187 @@ module or1k_marocchino_int_div
   output reg [OPTION_OPERAND_WIDTH-1:0] wrbk_div_result_o
 );
 
-  localparam DIVDW        = OPTION_OPERAND_WIDTH; // short name
-  localparam LOG2_DIVDW_2 = 4; // ceil(log2(DIVDW/2)): size of iteration counter
+  localparam DIVDW = OPTION_OPERAND_WIDTH; // short name
 
-  // divider interface
-  wire [DIVDW-1:0] s3t_div_result;
-  wire             s3o_dbz;
-  reg              s3o_div_signed, s3o_div_unsigned;
-  wire             div_s3_rdy;
-  reg              wrbk_div_miss_r;
+  /* verilator lint_off WIDTH */
+  localparam [4:0] DIV_COUNT_MAX  = OPTION_OPERAND_WIDTH - 1;
+  /* verilator lint_on WIDTH */
 
-  // divider controls
-  //  ## iterations counter and processing flag
-  reg [5:0] div_count;
-  reg       div_proc_r;
-  //  ## valid (registered, similar to multiplier)
-  reg       div_s3_rdy_r;
-  reg       div_valid_r;
 
-  //  ## dvisor is busy
-  wire   div_s3_busy = div_proc_r | (div_s3_rdy_r & wrbk_div_miss_r);
+  // divider state machine
+  //  ## 1-hot coded states
+  localparam [5:0] DIV_FSM_WAITING    = 6'b000001;
+  localparam [5:0] DIV_FSM_CONVERT_A1 = 6'b000010;
+  localparam [5:0] DIV_FSM_CONVERT_B1 = 6'b000100;
+  localparam [5:0] DIV_FSM_ITERATE    = 6'b001000;
+  localparam [5:0] DIV_FSM_CONVERT_D1 = 6'b010000;
+  localparam [5:0] DIV_FSM_DONE       = 6'b100000;
+  //  ## stae register
+  reg  [5:0] div_state;
+  //  ## particular states
+  wire       div_waiting_state    = div_state[0];
+  wire       div_convert_a1_state = div_state[1];
+  wire       div_convert_b1_state = div_state[2];
+  wire       div_iterate_state    = div_state[3];
+  wire       div_convert_d1_state = div_state[4];
+  wire       div_done_state       = div_state[5];
+  //  ## combined flags
+  wire       div_rdy = div_convert_d1_state | div_done_state;
+  //  ## iterations counter
+  reg  [4:0] div_count;
+  wire       div_count_0 = (div_count == 5'd0);
+
+
+  // To CPU pipe interface
   //  ## start division
-  assign idiv_taking_op_o = exec_op_div_i & (~div_s3_busy);
+  assign idiv_taking_op_o = exec_op_div_i & div_waiting_state;
+  //  ## decoupling buffer is full
+  reg    wrbk_div_miss_r;
+
+  // ## valid flag
+  reg    div_valid_r;
+  assign div_valid_o = div_valid_r;
+  // ---
+  always @(posedge cpu_clk) begin
+    if (pipeline_flush_i)
+      div_valid_r <= 1'b0;
+    else if (div_iterate_state & div_count_0)
+      div_valid_r <= 1'b1;
+    else if (padv_wrbk_i & grant_wrbk_to_div_i)
+      div_valid_r <= wrbk_div_miss_r ? div_rdy : 1'b0;
+  end // @clock
+
+
+  // signums of input operands
+  wire div_sign_a = exec_div_a1_i[DIVDW-1] & exec_op_div_signed_i;
+  wire div_sign_b = exec_div_b1_i[DIVDW-1] & exec_op_div_signed_i;
+
+  // division attributes
+  reg  dbz_r;
+  reg  div_signed_r;
+  reg  div_unsigned_r;
+  reg  div_sign_a_r;
+  reg  div_sign_b_r;
+  // ---
+  always @(posedge cpu_clk) begin
+    if (idiv_taking_op_o) begin
+      dbz_r           <= (exec_div_b1_i == {DIVDW{1'b0}});
+      div_signed_r    <= exec_op_div_signed_i;
+      div_unsigned_r  <= exec_op_div_unsigned_i;
+      div_sign_a_r    <= div_sign_a;
+      div_sign_b_r    <= div_sign_b;
+    end
+  end // at clock
 
 
   // division controller
   always @(posedge cpu_clk) begin
     if (pipeline_flush_i) begin
-      div_s3_rdy_r <= 1'b0;
-      div_proc_r   <= 1'b0;
-      div_count    <= 6'd0;
+      div_state <= DIV_FSM_WAITING;
     end
-    else if (idiv_taking_op_o) begin
-      div_s3_rdy_r <= 1'b0;
-      div_proc_r   <= 1'b1;
-      div_count    <= DIVDW;
-    end
-    else if (div_s3_rdy_r & (~wrbk_div_miss_r)) begin
-      div_s3_rdy_r <= 1'b0;
-      div_proc_r   <= 1'b0;
-      div_count    <= 6'd0;
-    end
-    else if (div_proc_r) begin
-      if (div_count == 6'd1) begin
-        div_s3_rdy_r <= 1'b1;
-        div_proc_r   <= 1'b0;
-      end
-      div_count <= div_count - 6'd1;
+    else begin
+      case (div_state)
+        // waiting new division
+        DIV_FSM_WAITING: begin
+          if (idiv_taking_op_o) begin
+            div_count <= DIV_COUNT_MAX;
+            div_state <= div_sign_a ? DIV_FSM_CONVERT_A1 :
+                          (div_sign_b ? DIV_FSM_CONVERT_B1 :
+                                          DIV_FSM_ITERATE);
+          end
+        end // waiting new division
+        // conversion operand "A"
+        DIV_FSM_CONVERT_A1: begin
+          div_state <= div_sign_b_r ? DIV_FSM_CONVERT_B1 : DIV_FSM_ITERATE;
+        end // conversion operand "A"
+        // conversion operand "B"
+        DIV_FSM_CONVERT_B1: begin
+          div_state <= DIV_FSM_ITERATE;
+        end // conversion operand "B"
+        // doing division
+        DIV_FSM_ITERATE: begin
+          div_state <= div_count_0 ? ((div_sign_a_r ^ div_sign_b_r) ? DIV_FSM_CONVERT_D1 :
+                                                                      DIV_FSM_DONE) :
+                                     DIV_FSM_ITERATE;
+          div_count <= div_count + 5'b11111; // "-1"
+        end // doing division
+        // conversion result / division done
+        DIV_FSM_CONVERT_D1,
+        DIV_FSM_DONE: begin
+          if (~wrbk_div_miss_r)
+            div_state <= DIV_FSM_WAITING;
+        end // conversion result / division done
+        // default
+        default:;
+      endcase
     end
   end // @clock
 
 
-  // valid flag to pipeline control
+  // difference, overflow
+  // shifted reminder
+  wire [DIVDW-1:0] div_2rem;
+  wire [DIVDW-1:0] div_sub_result;
+  wire             div_sub_overflow;
+
+
+  // Quotient (Numerator initially) register
+  reg [DIVDW-1:0] div_q;
+  // ---
   always @(posedge cpu_clk) begin
-    if (pipeline_flush_i)
-      div_valid_r <= 1'b0;
-    else if (div_proc_r & (div_count == 6'd1)) // sync to "div_s3_rdy_r"
-      div_valid_r <= 1'b1;
-    else if (padv_wrbk_i & grant_wrbk_to_div_i)
-      div_valid_r <= wrbk_div_miss_r ? div_s3_rdy_r : 1'b0;
+    if (idiv_taking_op_o)
+      div_q <= exec_div_a1_i;
+    else if (div_convert_a1_state)
+      div_q <= div_sub_result;
+    else if (div_iterate_state)
+      div_q <= {div_q[DIVDW-2:0], ~div_sub_overflow};
   end // @clock
 
-  //  ## result valid
-  assign div_s3_rdy  = div_s3_rdy_r;
-  assign div_valid_o = div_valid_r;
 
-
-  // regs of divider
-  reg [DIVDW-1:0] div_n;
+  // Denominator register
   reg [DIVDW-1:0] div_d;
-  reg [DIVDW-1:0] div_r;
-  reg             div_neg;
-  reg             dbz_r;
-
-  // signums of input operands
-  wire op_div_sign_a = exec_div_a1_i[DIVDW-1] & exec_op_div_signed_i;
-  wire op_div_sign_b = exec_div_b1_i[DIVDW-1] & exec_op_div_signed_i;
-
-  // partial reminder
-  wire [DIVDW:0] div_sub = {div_r[DIVDW-2:0],div_n[DIVDW-1]} - div_d;
-
+  // ---
   always @(posedge cpu_clk) begin
-    if (idiv_taking_op_o) begin
-      // Convert negative operands in the case of signed division.
-      // If only one of the operands is negative, the result is
-      // converted back to negative later on
-      div_n   <= (exec_div_a1_i ^ {DIVDW{op_div_sign_a}}) + {{(DIVDW-1){1'b0}},op_div_sign_a};
-      div_d   <= (exec_div_b1_i ^ {DIVDW{op_div_sign_b}}) + {{(DIVDW-1){1'b0}},op_div_sign_b};
-      div_r   <= {DIVDW{1'b0}};
-      div_neg <= (op_div_sign_a ^ op_div_sign_b);
-      dbz_r   <= (exec_div_b1_i == {DIVDW{1'b0}});
-      s3o_div_signed   <= exec_op_div_signed_i;
-      s3o_div_unsigned <= exec_op_div_unsigned_i;
-    end
-    else if (~div_valid_r) begin
-      if (~div_sub[DIVDW]) begin // div_sub >= 0
-        div_r <= div_sub[DIVDW-1:0];
-        div_n <= {div_n[DIVDW-2:0], 1'b1};
-      end
-      else begin                 // div_sub < 0
-        div_r <= {div_r[DIVDW-2:0],div_n[DIVDW-1]};
-        div_n <= {div_n[DIVDW-2:0], 1'b0};
-      end
-    end // ~done
+    if (idiv_taking_op_o)
+      div_d <= exec_div_b1_i;
+    else if (div_convert_b1_state)
+      div_d <= div_sub_result;
   end // @clock
 
-  assign s3t_div_result = (div_n ^ {DIVDW{div_neg}}) + {{(DIVDW-1){1'b0}},div_neg};
-  assign s3o_dbz = dbz_r;
+  // Partial remainder
+  reg [DIVDW-2:0] div_r;
+  // ---
+  always @(posedge cpu_clk) begin
+    if (idiv_taking_op_o)
+      div_r <= {(DIVDW-1){1'b0}};
+    else if (div_iterate_state)
+      div_r <= div_sub_overflow ? div_2rem[DIVDW-2:0] : div_sub_result[DIVDW-2:0];
+  end // @clock
+
+
+  // shifted reminder
+  assign div_2rem = {div_r,div_q[DIVDW-1]};
+
+  // multiplexor for minuend
+  wire [DIVDW-1:0] div_sub_minuend;
+  //  if "iterate" then "shifted reminder"
+  //  if "done" then "quotient"
+  //  overwise "zero" (sign conversions)
+  assign div_sub_minuend = ({DIVDW{div_iterate_state}} & div_2rem) |
+                           ({DIVDW{div_done_state}} & div_q);
+
+  // multiplexor for subtrahend
+  //  if "convert-a" then "numerator"
+  //  if ("convert-b" or "iterate") then "denominator"
+  //  if "convert-d" then "quotient"
+  //  overwise "zero"
+  wire [DIVDW-1:0] div_sub_subtrahend;
+  assign div_sub_subtrahend = ({DIVDW{div_convert_a1_state}} & div_q ) |
+                              ({DIVDW{(div_convert_b1_state | div_iterate_state)}} & div_d) |
+                              ({DIVDW{div_convert_d1_state}} & div_q);
+
+  // do subsructon
+  assign {div_sub_overflow, div_sub_result} = div_sub_minuend - div_sub_subtrahend;
 
 
   /**** DIV Write Back ****/
@@ -182,16 +256,16 @@ module or1k_marocchino_int_div
     else if (padv_wrbk_i & grant_wrbk_to_div_i)
       wrbk_div_miss_r <= 1'b0;
     else if (~wrbk_div_miss_r)
-      wrbk_div_miss_r <= div_s3_rdy;
+      wrbk_div_miss_r <= div_rdy;
   end // @clock
 
   //  # update carry flag by division
-  wire div_carry_set      = s3o_div_unsigned &   s3o_dbz;
-  wire div_carry_clear    = s3o_div_unsigned & (~s3o_dbz);
+  wire div_carry_set      = div_unsigned_r &   dbz_r;
+  wire div_carry_clear    = div_unsigned_r & (~dbz_r);
 
   //  # update overflow flag by division
-  wire div_overflow_set   = s3o_div_signed &   s3o_dbz;
-  wire div_overflow_clear = s3o_div_signed & (~s3o_dbz);
+  wire div_overflow_set   = div_signed_r &   dbz_r;
+  wire div_overflow_clear = div_signed_r & (~dbz_r);
 
   //  ## Write-Back-miss pending result
   reg [DIVDW-1:0] div_result_p;
@@ -202,7 +276,7 @@ module or1k_marocchino_int_div
   // ---
   always @(posedge cpu_clk) begin
     if (~wrbk_div_miss_r) begin
-      div_result_p         <= s3t_div_result;
+      div_result_p         <= div_sub_result;
       div_carry_set_p      <= div_carry_set;
       div_carry_clear_p    <= div_carry_clear;
       div_overflow_set_p   <= div_overflow_set;
@@ -215,7 +289,7 @@ module or1k_marocchino_int_div
   assign exec_except_overflow_div_o = grant_wrbk_to_div_i & mux_except_overflow_div;
 
   //  Write-Back-registering result
-  wire [DIVDW-1:0] wrbk_div_result_m = wrbk_div_miss_r ? div_result_p : s3t_div_result;
+  wire [DIVDW-1:0] wrbk_div_result_m = wrbk_div_miss_r ? div_result_p : div_sub_result;
   // ---
   always @(posedge cpu_clk) begin
     if (padv_wrbk_i) begin
