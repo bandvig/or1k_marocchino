@@ -37,11 +37,8 @@
 //////////////////////////////////////////////////////////////////////
 
 //----------------------------------------------------------------------------//
-// Radix-4 non-restoring division kernel for 58-bits fractionals              //
-// Opposite to integer version it also:                                       //
-//  a) outputs reminder for correct sticky bit computation                    //
-//  b) doesn't need signum of quotient                                        //
-//  c) updated for double and single precision fractionals                    //
+// Radix-4 non-restoring division kernel with over-redundant quotient digits  //
+// set for 58-bits fractionals                                                //
 //     !!! DON'T CHANGE MODULE PARAMETERS !!!                                 //
 //----------------------------------------------------------------------------//
 
@@ -82,23 +79,26 @@ module r4div_fract58
   // ---
   reg [LOG2N2-1:0] div_count_r;
   // ---
-  localparam [3:0] DIV_WAIT_IN   = 4'b0001;
-  localparam [3:0] DIV_PROC      = 4'b0010;
-  localparam [3:0] DIV_LATCH_RES = 4'b0100;
-  localparam [3:0] DIV_WAIT_OUT  = 4'b1000;
+  localparam [4:0] DIV_WAIT_IN   = 5'b00001;
+  localparam [4:0] DIV_CALC_3D   = 5'b00010;
+  localparam [4:0] DIV_PROC      = 5'b00100;
+  localparam [4:0] DIV_LATCH_RES = 5'b01000;
+  localparam [4:0] DIV_WAIT_OUT  = 5'b10000;
   // ---
-  reg [3:0] div_state;
+  reg  [4:0] div_state;
   // ---
-  wire       div_proc      = div_state[1];
-  assign     div_busy_o    = div_state[1] | div_state[2];
-  wire       div_latch_res = div_state[2];
-  assign     div_ready_o   = div_state[3];
+  wire       div_calc_3d   = div_state[1];
+  wire       div_proc      = div_state[2];
+  wire       div_latch_res = div_state[3];
+  // ---
+  assign     div_busy_o    = ~div_state[0];
+  assign     div_ready_o   = div_state[4];
   // division controller
   always @(posedge cpu_clk) begin
     if (pipeline_flush_i) begin
-      dbz_o       <= 1'b0;
-      div_count_r <= {LOG2N2{1'b0}};
-      div_state   <= DIV_WAIT_IN;
+      dbz_o       <= 1'b0;            // pipe flush
+      div_count_r <= {LOG2N2{1'b0}};  // pipe flush
+      div_state   <= DIV_WAIT_IN;     // pipe flush
     end
     else begin
       case (div_state)
@@ -111,10 +111,15 @@ module r4div_fract58
             end
             else begin
               div_count_r <= s1o_op_fp64_arith_i ? DIV_COUNT_MAX_D : DIV_COUNT_MAX_S;
-              div_state   <= DIV_PROC;
+              div_state   <= DIV_CALC_3D;
             end
           end
         end // waiting input
+
+        // compute "3 * denominator"
+        DIV_CALC_3D: begin
+          div_state <= DIV_PROC;
+        end // compute "3 * denominator"
 
         // iterate
         DIV_PROC: begin
@@ -142,30 +147,43 @@ module r4div_fract58
     end
   end // @clock
 
-  // latched multiples of denominator
-  reg [N-1:0] one_den_r;    // 1 * denominator
-  reg   [N:0] three_den_r;  // 3 * denominator
+
+  // next and partial reminders
+  wire   [N:0] nrem;   // next reminder (4*rem - q_digit*den)
+  reg    [N:0] prem_r; // partial reminder
+  // --- partial reminder update ---
+  always @(posedge cpu_clk) begin
+    if (div_start_i)
+      prem_r <= {1'b0,({N{~zer}} & num_i)};
+    else if (div_proc)
+      prem_r <= nrem;
+  end // @clock
+
+
+  // latched (1 * denominator)
+  reg [N-1:0] one_den_r;
   // ---
   always @(posedge cpu_clk) begin
-    if (div_start_i) begin
-      one_den_r   <= den_i;
-      three_den_r <= {1'b0, den_i} + {den_i, 1'b0};
-    end
-  end
+    if (div_start_i)
+      one_den_r <= den_i;
+  end // @clock
 
-  // reminder related
-  wire   [N:0] four_rem;   // 4*rem
-  wire   [N:0] nrem;       // next reminder (4*rem - q_digit*den)
-  reg    [N:0] prem_hi_r;  // partial reminder: initially = {0,num(2n-1)...num(n)}
-  wire   [3:0] trunc_rem;  // truncated partial reminder
+
+  // latched (3 * denominator)
+  reg [N:0] three_den_r;
+  // ---
+  always @(posedge cpu_clk) begin
+    if (div_calc_3d)
+      three_den_r <= nrem;
+  end // @clock
+
 
   // Each iteration starts from qoutient digit selection
-  assign trunc_rem = prem_hi_r[N:N-3];
-
-  // signed digit selection, format: {sign[0:0], magn[1:0]}
-  reg  [2:0] q_digit;
+  wire [3:0] trunc_rem = prem_r[N:N-3];
   // magnitude for digits depended on denominator
   wire       lsb_magn_2or3 = ~one_den_r[N-2];
+  // signed digit selection, format: {sign[0:0], magn[1:0]}
+  reg  [2:0] q_digit;
   // {sign[0:0], magn[1:0]}
   always @(trunc_rem or lsb_magn_2or3) begin
     // synthesis parallel_case
@@ -183,6 +201,7 @@ module r4div_fract58
     endcase
   end
 
+
   // select the multiple denominator
   reg [N:0] mult_den; // : 0 / den / 2*den / 3*den
   // second operand selection
@@ -196,22 +215,38 @@ module r4div_fract58
     endcase
   end
 
-  assign four_rem = {prem_hi_r[N-2:0],2'd0};
+
+  // Multiplexor for "A" operand
+  wire [N:0] amux;
+  //  if "calcualte (3 * denominator)" then (2 * denominator)
+  //  if "iterate" then (4 * remainder)
+  //  if "latch result" then "remainder"
+  //  otherwise zero
+  assign amux = {({N{div_calc_3d}} & one_den_r), 1'b0} |
+                {({(N-1){div_proc}} & prem_r[N-2:0]), 2'd0} |
+                {{(N+1){div_latch_res}} & prem_r};
+
+  // Multiplexor for "B" operand
+  wire [N:0] bmux;
+  //  if "calcualte (3 * denominator)" then (1 * denominator)
+  //  if "iterate" then (multiple denominator)
+  //  if "latch result" and "negative remainder" then (1 * denominator)
+  //  otherwise zero
+  assign bmux = {1'b0, ({N{div_calc_3d | (div_latch_res & prem_r[N])}} & one_den_r)} |
+                {{(N+1){div_proc}} & mult_den};
+
+  // Multiplexor for "do subtraction"
+  //  if "iterate" and "positive reminder" then subtract
+  //  otherwise add
+  wire   smux = div_proc & (~prem_r[N]);
+
   // next reminder
-  wire   sub  = ~q_digit[2]; // substract
-  // sub ? (4*REM - MultDen) : (4*REM + MultDen)
+  // smux ? (4*REM - MultDen) : (4*REM + MultDen)
   /* verilator lint_off WIDTH */
-  /* 'sub' in next adder should go to carry in, but Verilator expect multi-bit value */
-  assign nrem = four_rem + (mult_den ^ {(N+1){sub}}) + sub;
+  /* 'smux' should go to 'carry in', but Verilator expect multi-bit value */
+  assign nrem = amux + (bmux ^ {(N+1){smux}}) + smux;
   /* verilator lint_on WIDTH */
 
-  // and partial reminder update
-  always @(posedge cpu_clk) begin
-    if (div_start_i)
-      prem_hi_r <= {1'b0,({N{~zer}} & num_i)};
-    else if (div_proc)
-      prem_hi_r <= nrem;
-  end // @clock
 
   // signed digits to tow's complement on the fly convertor
   //  # part Q
@@ -255,13 +290,10 @@ module r4div_fract58
 
   // Outputs
   //  # if REM < 0 than { REM += D; Q -= 1; }
-  //  # sign of resulting reminder: -1 / 0 [two's complement]
-  wire [N-1:0] rem_sign = {N{prem_hi_r[N]}};
-  // ---
   always @(posedge cpu_clk) begin
     if (div_latch_res) begin
-      rem_o  <= prem_hi_r[N-1:0] + (rem_sign & one_den_r);
-      qtnt_o <= q_r + rem_sign;
+      rem_o  <= nrem[N-1:0];
+      qtnt_o <= q_r + {N{prem_r[N]}};
     end
   end // @clock
 
@@ -313,14 +345,14 @@ module pfpu_marocchino_div
 
   // divider pipeline controls
   //  ## ready signals per stage
-  wire  s2o_div_ready, s2o_busy;
+  wire s2o_div_ready, s2o_div_busy;
   //  ## busy per stage
   wire out_busy = div_rdy_o & ~rnd_taking_div_i;
-  wire s2_busy  = s2o_busy | (s2o_div_ready & out_busy);
+  wire s2_busy  = s2o_div_busy;
   //  ## advance per stage
   wire s2_adv  = s1o_div_ready_i & ~s2_busy;
   wire out_adv = s2o_div_ready   & ~out_busy;
-  //  ## multiplier is taking operands
+  //  ## divider is taking operands
   assign div_busy_o      = s1o_div_ready_i & s2_busy;
   assign div_taking_op_o = s2_adv;
 
@@ -347,8 +379,8 @@ module pfpu_marocchino_div
     end // advance pipe
   end // @clock
 
-  wire [57:0] s3t_rem58;
-  wire [57:0] s3t_qtnt58;
+  wire [57:0] s2o_rem58;
+  wire [57:0] s2o_qtnt58;
 
   // we use right shifted numenator to guarantee
   // (numenator < denominator) condition
@@ -359,9 +391,9 @@ module pfpu_marocchino_div
     // pipeline controls
     .pipeline_flush_i     (pipeline_flush_i), // R4DIV-FRACT
     .div_start_i          (s2_adv), // R4DIV-FRACT
-    .div_busy_o           (s2o_busy), // R4DIV-FRACT
+    .div_busy_o           (s2o_div_busy), // R4DIV-FRACT
     .div_ready_o          (s2o_div_ready), // R4DIV-FRACT
-    .wb_taking_div_i      (out_adv),
+    .wb_taking_div_i      (out_adv), // R4DIV-FRACT
     // force zero result
     .s1o_opc_0_i          (s1o_opc_0_i), // R4DIV-FRACT
     .s1o_dbz_i            (s1o_dbz_i), // R4DIV-FRACT
@@ -372,8 +404,8 @@ module pfpu_marocchino_div
     .s1o_op_fp64_arith_i  (s1o_op_fp64_arith_i), // R4DIV-FRACT
     // outputs
     .dbz_o                (s2o_dbz), // R4DIV-FRACT
-    .rem_o                (s3t_rem58), // R4DIV-FRACT
-    .qtnt_o               (s3t_qtnt58) // R4DIV-FRACT
+    .rem_o                (s2o_rem58), // R4DIV-FRACT
+    .qtnt_o               (s2o_qtnt58) // R4DIV-FRACT
   );
 
 
@@ -386,14 +418,14 @@ module pfpu_marocchino_div
   //  single precision 28 bits: 0?.ff-23-ff[r/f][s/r][s2/s2]
   //                                                 ^^^^^^^ [0] bit of QTNT-58
   //                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ packed in LSB for rounding
-  wire        s3t_sticky = (s2o_op_fp64_arith & s3t_qtnt58[1]) | (s3t_qtnt58[0]) | (|s3t_rem58);
-  wire [56:0] s3t_qtnt57 = {(s2o_op_fp64_arith ? (s3t_qtnt58[57:2]) : (s3t_qtnt58[56:1])), s3t_sticky};
+  wire        s3t_sticky = (s2o_op_fp64_arith & s2o_qtnt58[1]) | (s2o_qtnt58[0]) | (|s2o_rem58);
+  wire [56:0] s3t_qtnt57 = {(s2o_op_fp64_arith ? (s2o_qtnt58[57:2]) : (s2o_qtnt58[56:1])), s3t_sticky};
 
   // Possible left shift computation.
   // In fact, as the dividend and divisor was normalized
   //   and the result is non-zero
   //   the '1' is maximum number of leading zeros in the quotient.
-  wire s3t_nlz = s2o_op_fp64_arith ? (~s3t_qtnt58[56]) : (~s3t_qtnt58[26]);
+  wire s3t_nlz = s2o_op_fp64_arith ? (~s2o_qtnt58[56]) : (~s2o_qtnt58[26]);
   wire [12:0] s3t_exp13_m1 = s2o_exp13c - 13'd1;
   // left shift flag and corrected exponent
   wire        s3t_shlx;
