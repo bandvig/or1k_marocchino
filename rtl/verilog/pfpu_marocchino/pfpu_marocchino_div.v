@@ -79,26 +79,27 @@ module r4div_fract58
   // ---
   reg [LOG2N2-1:0] div_count_r;
   // ---
-  localparam [4:0] DIV_WAIT_IN   = 5'b00001;
-  localparam [4:0] DIV_CALC_3D   = 5'b00010;
-  localparam [4:0] DIV_PROC      = 5'b00100;
-  localparam [4:0] DIV_LATCH_RES = 5'b01000;
-  localparam [4:0] DIV_WAIT_OUT  = 5'b10000;
+  localparam [5:0] DIV_WAIT_IN    = 6'b000001;
+  localparam [5:0] DIV_CALC_3D    = 6'b000010; // compute (3 * denominator)
+  localparam [5:0] DIV_PROC       = 6'b000100; // iterate
+  localparam [5:0] DIV_LATCH_REM  = 6'b001000; // convert and latch remainder
+  localparam [5:0] DIV_LATCH_QTNT = 6'b010000; // convert and latch quotient
+  localparam [5:0] DIV_WAIT_OUT   = 6'b100000;
   // ---
-  reg  [4:0] div_state;
+  reg  [5:0] div_state;
   // ---
-  wire       div_calc_3d   = div_state[1];
-  wire       div_proc      = div_state[2];
-  wire       div_latch_res = div_state[3];
+  wire       div_calc_3d    = div_state[1];
+  wire       div_proc       = div_state[2];
+  wire       div_latch_rem  = div_state[3];
+  wire       div_latch_qtnt = div_state[4];
   // ---
-  assign     div_busy_o    = ~div_state[0];
-  assign     div_ready_o   = div_state[4];
+  assign     div_busy_o  = ~div_state[0];
+  assign     div_ready_o =  div_state[5];
   // division controller
   always @(posedge cpu_clk) begin
     if (pipeline_flush_i) begin
-      dbz_o       <= 1'b0;            // pipe flush
-      div_count_r <= {LOG2N2{1'b0}};  // pipe flush
-      div_state   <= DIV_WAIT_IN;     // pipe flush
+      dbz_o     <= 1'b0;        // pipe flush
+      div_state <= DIV_WAIT_IN; // pipe flush
     end
     else begin
       case (div_state)
@@ -106,13 +107,11 @@ module r4div_fract58
         DIV_WAIT_IN: begin
           if (div_start_i) begin
             if (zer) begin
-              dbz_o       <= s1o_dbz_i; // in R4DIV(fractionals)
-              div_state   <= DIV_LATCH_RES;
+              dbz_o     <= s1o_dbz_i; // in R4DIV(fractionals)
+              div_state <= DIV_LATCH_REM;
             end
-            else begin
-              div_count_r <= s1o_op_fp64_arith_i ? DIV_COUNT_MAX_D : DIV_COUNT_MAX_S;
-              div_state   <= DIV_CALC_3D;
-            end
+            else
+              div_state <= DIV_CALC_3D;
           end
         end // waiting input
 
@@ -124,15 +123,18 @@ module r4div_fract58
         // iterate
         DIV_PROC: begin
           if (~(|div_count_r)) // == 0
-            div_state   <= DIV_LATCH_RES;
-          else
-            div_count_r <= div_count_r + {LOG2N2{1'b1}}; // -= 1
+            div_state <= DIV_LATCH_REM;
         end // iterate
 
-        // latch result
-        DIV_LATCH_RES: begin
+        // convert and latch remainder
+        DIV_LATCH_REM: begin
+          div_state <= DIV_LATCH_QTNT;
+        end // convert and latch remainder
+
+        // convert and latch quotient
+        DIV_LATCH_QTNT: begin
           div_state <= DIV_WAIT_OUT;
-        end // latch result
+        end // convert and latch quotient
 
         // waiting output
         DIV_WAIT_OUT: begin
@@ -145,6 +147,15 @@ module r4div_fract58
         default:;
       endcase
     end
+  end // @clock
+
+
+  // division iterations counter
+  always @(posedge cpu_clk) begin
+    if (div_start_i)
+      div_count_r <= s1o_op_fp64_arith_i ? DIV_COUNT_MAX_D : DIV_COUNT_MAX_S;
+    else if (div_proc)
+      div_count_r <= div_count_r + {LOG2N2{1'b1}}; // -= 1
   end // @clock
 
 
@@ -216,24 +227,33 @@ module r4div_fract58
   end
 
 
+  // signed digits to tow's complement on the fly convertor
+  reg   [N-1:0] q_r;
+  reg   [N-1:0] qm_r;
+
+
   // Multiplexor for "A" operand
   wire [N:0] amux;
   //  if "calcualte (3 * denominator)" then (2 * denominator)
   //  if "iterate" then (4 * remainder)
-  //  if "latch result" then "remainder"
+  //  if "convert and latch remainder" then "remainder" (if REM < 0 then REM += D)
+  //  if "convert and latch quotient" then "quotient" (if REM < 0 then QTNT -= 1)
   //  otherwise zero
   assign amux = {({N{div_calc_3d}} & one_den_r), 1'b0} |
                 {({(N-1){div_proc}} & prem_r[N-2:0]), 2'd0} |
-                {{(N+1){div_latch_res}} & prem_r};
+                {{(N+1){div_latch_rem}} & prem_r} |
+                {1'b0, ({N{div_latch_qtnt}} & q_r)};
 
   // Multiplexor for "B" operand
   wire [N:0] bmux;
   //  if "calcualte (3 * denominator)" then (1 * denominator)
   //  if "iterate" then (multiple denominator)
-  //  if "latch result" and "negative remainder" then (1 * denominator)
+  //  if "convert and latch remainder" and "negative remainder" then (1 * denominator) (if REM < 0 then REM += D)
+  //  if "convert and latch quotient" and "negative remainder" then "-1"
   //  otherwise zero
-  assign bmux = {1'b0, ({N{div_calc_3d | (div_latch_res & prem_r[N])}} & one_den_r)} |
-                {{(N+1){div_proc}} & mult_den};
+  assign bmux = {1'b0, ({N{div_calc_3d | (div_latch_rem & prem_r[N])}} & one_den_r)} |
+                {{(N+1){div_proc}} & mult_den} |
+                {1'b0, {N{div_latch_qtnt & prem_r[N]}}};
 
   // Multiplexor for "do subtraction"
   //  if "iterate" and "positive reminder" then subtract
@@ -249,9 +269,7 @@ module r4div_fract58
 
 
   // signed digits to tow's complement on the fly convertor
-  //  # part Q
-  reg   [N-1:0] q_r;
-  //  # ---
+  // --- part Q ---
   always @(posedge cpu_clk) begin
     if (div_start_i)
       q_r <= {N{1'b0}};
@@ -268,9 +286,7 @@ module r4div_fract58
       endcase
     end
   end // @clock
-  //  # part QM
-  reg   [N-1:0] qm_r;
-  //  # ---
+  // --- part QM ---
   always @(posedge cpu_clk) begin
     if (div_start_i)
       qm_r <= {{(N-2){1'b0}},2'b11};
@@ -289,12 +305,15 @@ module r4div_fract58
   end // @clock
 
   // Outputs
-  //  # if REM < 0 than { REM += D; Q -= 1; }
+  //  # if REM < 0 then { REM += D; Q -= 1; }
   always @(posedge cpu_clk) begin
-    if (div_latch_res) begin
+    if (div_latch_rem)
       rem_o  <= nrem[N-1:0];
-      qtnt_o <= q_r + {N{prem_r[N]}};
-    end
+  end // @clock
+  // ---
+  always @(posedge cpu_clk) begin
+    if (div_latch_qtnt)
+      qtnt_o <= nrem[N-1:0];
   end // @clock
 
 endmodule // r4div_fract58
