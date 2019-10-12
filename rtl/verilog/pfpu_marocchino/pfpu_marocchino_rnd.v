@@ -40,9 +40,6 @@
 `include "or1k_defines.v"
 
 module pfpu_marocchino_rnd
-#(
-  parameter OPTION_FTOI_ROUNDING = "CPP" // "CPP" (force toward zero; default) / "IEEE" (by rounding mode bits from FPCSR)
-)
 (
   // clocks, resets
   input                             cpu_clk,
@@ -476,33 +473,16 @@ module pfpu_marocchino_rnd
   wire        s2t_f2i_carry_rnd;
   wire        s2t_f2i_inv;
   wire [63:0] s2t_int64_rnd;
-  // ---
-  generate
-  if (OPTION_FTOI_ROUNDING == "CPP") begin : ftoi_rounding_cpp
-    //  # Force "toward zero"
-    //  # F2I invalid result (overflow)
-    assign s2t_f2i_carry_rnd = s1o_op_fp64_f2i ? s1o_fract64[63] : s1o_fract64[31];
-    assign s2t_f2i_inv       = ((~s1o_f2i_sign) & s2t_f2i_carry_rnd) | s1o_f2i_ovf;
-    //  # prepare to tow's complement conversion (left aligned)
-    //  #  if invalid (i.e. overflow) return maximum signed integer
-    assign s2t_int64_rnd = {64{s1o_f2i_sign_cp}} ^
-                           (s2t_f2i_inv ? 64'h7fffffffffffffff :
-                             (s1o_op_fp64_f2i ? s1o_fract64 :
-                                                {s1o_fract64[31:0],32'd0}));
-  end
-  else begin : ftoi_rounding_ieee
-    //  # By rounding mode bits from FPCSR
-    //  # F2I invalid result (overflow)
-    assign s2t_f2i_carry_rnd = s1o_op_fp64_f2i ? s2t_fract64_rnd[63] : s2t_fract64_rnd[31];
-    assign s2t_f2i_inv       = ((~s1o_f2i_sign) & s2t_f2i_carry_rnd) | s1o_f2i_ovf;
-    //  # prepare to tow's complement conversion (left aligned)
-    //  #  if invalid (i.e. overflow) return maximum signed integer
-    assign s2t_int64_rnd = {64{s1o_f2i_sign_cp}} ^
-                           (s2t_f2i_inv ? 64'h7fffffffffffffff :
-                             (s1o_op_fp64_f2i ? s2t_fract64_rnd :
-                                                {s2t_fract64_rnd[31:0],32'd0}));
-  end
-  endgenerate // select rounding approach for F2I
+  //  # Force "toward zero" (in according with spec-1.3)
+  //  # F2I invalid result (overflow)
+  assign s2t_f2i_carry_rnd = s1o_op_fp64_f2i ? s1o_fract64[63] : s1o_fract64[31];
+  assign s2t_f2i_inv       = ((~s1o_f2i_sign) & s2t_f2i_carry_rnd) | s1o_f2i_ovf;
+  //  # prepare to tow's complement conversion (left aligned)
+  //  #  if invalid (i.e. overflow) return maximum signed integer
+  assign s2t_int64_rnd = {64{s1o_f2i_sign_cp}} ^
+                         (s2t_f2i_inv ? 64'h7fffffffffffffff :
+                           (s1o_op_fp64_f2i ? s1o_fract64 :
+                                              {s1o_fract64[31:0],32'd0}));
 
   // output of rounding stage
   reg        s2o_sign;

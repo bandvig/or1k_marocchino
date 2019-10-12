@@ -161,16 +161,7 @@ such initialization that typically means that something wrong with your testing 
 |FEATURE_FASTCONTEXTS|Enable fast context switching of register sets|`NONE`|`n/a`|not implemented|
 |FEATURE_MULTICORE|Enable the `coreid` and `numcores` SPR registers|`NONE`|`ENABLED` `NONE`|Linux SMP|
 |FEATURE_FPU|Enable the FPU|`ENABLED`|`n/a`|It presences permanently|
-|OPTION_ORFPX64A32_ABI|ABI variant to support doubles on 32-bits architectures|`GCC5`|`GCC5` `GCC9`|till GCC9 release|
-|OPTION_FTOI_ROUNDING|Select rounding behavior for `lf.ftoi.s(d)` instructions|`CPP`|`CPP` `IEEE`|see note below|
 |FEATURE_BRANCH_PREDICTOR|Select the branch predictor implementation|`GSHARE`|`n/a`|It presences permanently|
-
-**Note 6:** *C/C++ double to integer conversion assumes truncation (rounding `toward zero`).
-The default (`CPP`) value of OPTION_FTOI_ROUNDING forces `toward zero` rounding mode exclusively for
-`lf.ftoi.s(d)` instructions regardless of `rounding mode` bits of FPCSR. While with `IEEE` value
-`lf.ftoi.s(d)` perform conversion in according with `rounding mode` bits of FPCSR. And these bits are
-`nearest-even` rounding mode by default. All other floating point instructions always perform rounding
-in according with `rounding mode` bits of FPCSR.*
 
 ### Exception handling options
 
