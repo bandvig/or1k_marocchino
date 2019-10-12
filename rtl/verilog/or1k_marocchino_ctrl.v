@@ -412,7 +412,7 @@ module or1k_marocchino_ctrl
     if (cpu_rst)
       spr_epcr <= {OPTION_OPERAND_WIDTH{1'b0}};
     else if (wrbk_an_except_i) begin
-      // synthesis parallel_case
+      (* parallel_case *)
       casez({(wrbk_except_itlb_miss_i | wrbk_except_ipagefault_i),
              wrbk_except_ibus_err_i,
              (wrbk_except_illegal_i   | wrbk_except_dbus_align_i | wrbk_except_ibus_align_i),
@@ -449,7 +449,7 @@ module or1k_marocchino_ctrl
     if (cpu_rst)
       spr_eear <= {OPTION_OPERAND_WIDTH{1'b0}};
     else if (wrbk_an_except_i) begin
-      // synthesis parallel_case
+      (* parallel_case *)
       casez({(wrbk_except_itlb_miss_i | wrbk_except_ipagefault_i | wrbk_except_ibus_align_i | wrbk_except_ibus_err_i),
              (wrbk_except_dtlb_miss_i | wrbk_except_dpagefault_i | wrbk_except_dbus_align_i),
              sbuf_err_i,
@@ -478,7 +478,7 @@ module or1k_marocchino_ctrl
   // Store exception vector
   always @(posedge cpu_clk) begin
     if (wrbk_an_except_i) begin
-      // synthesis parallel_case
+      (* parallel_case *)
       casez({wrbk_except_itlb_miss_i,
              wrbk_except_ipagefault_i,
              wrbk_except_ibus_err_i,
@@ -539,7 +539,7 @@ module or1k_marocchino_ctrl
       except_proc_fsm_state   <= EXCEPT_PROC_FSM_GET_RST; // at reset
     end
     else begin
-      // synthesis parallel_case
+      (* parallel_case *)
       case (except_proc_fsm_state)
         // waiting
         EXCEPT_PROC_FSM_WAITING: begin
@@ -604,7 +604,7 @@ module or1k_marocchino_ctrl
       flush_fsm_state  <= FLUSH_FSM_BY_EXCEPT; // at reset
     end
     else begin
-      // synthesis parallel_case
+      (* parallel_case *)
       case (flush_fsm_state)
         // waiting
         FLUSH_FSM_WAITING: begin
@@ -1030,7 +1030,7 @@ module or1k_marocchino_ctrl
   reg spr_access_valid_reg; // SPR ACK in case of access to not existing modules
   //---
   always @(*) begin
-    // synthesis parallel_case
+    (* parallel_case *)
     case(spr_addr_mux[14:11]) // `SPR_BASE
       // system registers
       `OR1K_SPR_SYS_BASE:  spr_access_valid_mux = 1'b1;
@@ -1065,7 +1065,7 @@ module or1k_marocchino_ctrl
       spr_bus_state <= SPR_BUS_WAIT_REQ;
     end
     else begin
-      // synthesis parallel_case
+      (* parallel_case *)
       case (spr_bus_state)
         // wait SPR BUS access request
         SPR_BUS_WAIT_REQ: begin
@@ -1123,7 +1123,7 @@ module or1k_marocchino_ctrl
 
   // SPR BUS controller: in/out address and data
   always @(posedge cpu_clk) begin
-    // synthesis parallel_case
+    (* parallel_case *)
     case (spr_bus_state)
       // run l.mf(t)spr processing
       SPR_BUS_RUN_MXSPR,
@@ -1218,7 +1218,7 @@ module or1k_marocchino_ctrl
     if (cpu_rst)
       spr_sys_state <= SPR_SYS_WAIT;
     else begin
-      // synthesis parallel_case
+      (* parallel_case *)
       case (spr_sys_state)
         SPR_SYS_WAIT: begin
           if (spr_sys_group_cs)
@@ -1240,7 +1240,7 @@ module or1k_marocchino_ctrl
   reg  [OPTION_OPERAND_WIDTH-1:0] spr_sys_group_dat;
   // ---
   always @(*) begin
-    // synthesis parallel_case
+    (* parallel_case *)
     case(`SPR_OFFSET(({1'b0, spr_sys_group_wadr_r})))
       `SPR_OFFSET(`OR1K_SPR_VR_ADDR)      : spr_sys_group_dat = spr_vr;
       `SPR_OFFSET(`OR1K_SPR_UPR_ADDR)     : spr_sys_group_dat = spr_upr;
@@ -1404,7 +1404,7 @@ module or1k_marocchino_ctrl
         spr_du_state     <= SPR_DU_WAIT;
       end
       else begin
-        // synthesis parallel_case
+        (* parallel_case *)
         case (spr_du_state)
           SPR_DU_WAIT: begin
             if (spr_du_cs) begin

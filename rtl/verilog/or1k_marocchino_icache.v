@@ -269,7 +269,7 @@ module or1k_marocchino_icache
     end
     else begin
       // states
-      // synthesis parallel_case
+      (* parallel_case *)
       case (ic_state)
         IC_READ: begin
           // to-re-fill or invalidate mean that neither
@@ -329,7 +329,7 @@ module or1k_marocchino_icache
     {virt_addr_rfl_r[31:4], virt_addr_rfl_r[3:0] + 4'd4};  // 16 byte = (4 words x 32 bits/word)
   // ---
   always @(posedge cpu_clk) begin
-    // synthesis parallel_case
+    (* parallel_case *)
     case (ic_state)
       IC_READ: begin // re-fill address register
         if (spr_ic_cs)        // set re-fill address register to invaldate by l.mtspr
@@ -490,7 +490,7 @@ module or1k_marocchino_icache
       tag_din_way[w2] = tag_dout_way_s2o[w2]; // by default
     end
 
-    // synthesis parallel_case
+    (* parallel_case *)
     case (ic_state)
       IC_READ: begin
         // Update LRU data by read-hit only

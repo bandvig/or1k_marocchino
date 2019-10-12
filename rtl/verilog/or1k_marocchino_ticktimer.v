@@ -141,7 +141,7 @@ module or1k_marocchino_ticktimer
       spr_tt_state  <= SPR_TT_WAIT;
     end
     else begin
-      // synthesis parallel_case
+      (* parallel_case *)
       case (spr_tt_state)
         // wait SPR access request
         SPR_TT_WAIT: begin

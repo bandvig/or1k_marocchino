@@ -197,7 +197,7 @@ module r4div_fract58
   reg  [2:0] q_digit;
   // {sign[0:0], magn[1:0]}
   always @(trunc_rem or lsb_magn_2or3) begin
-    // synthesis parallel_case
+    (* parallel_case *)
     casez (trunc_rem)
       4'b0000: q_digit = 3'b000; //  0
       4'b0001: q_digit = 3'b001; //  1
@@ -217,7 +217,7 @@ module r4div_fract58
   reg [N:0] mult_den; // : 0 / den / 2*den / 3*den
   // second operand selection
   always @(q_digit[1:0] or one_den_r or three_den_r) begin
-    // synthesis parallel_case
+    (* parallel_case *)
     case (q_digit[1:0])
       2'b00: mult_den = {(N+1){1'b0}};     // 0 * denominator
       2'b01: mult_den = {1'b0, one_den_r}; // 1 * denominator
@@ -274,7 +274,7 @@ module r4div_fract58
     if (div_start_i)
       q_r <= {N{1'b0}};
     else if (div_proc) begin
-      // synthesis parallel_case
+      (* parallel_case *)
       case (q_digit)
         3'b000:  q_r <= { q_r[N-3:0],2'b00};
         3'b001:  q_r <= { q_r[N-3:0],2'b01};
@@ -291,7 +291,7 @@ module r4div_fract58
     if (div_start_i)
       qm_r <= {{(N-2){1'b0}},2'b11};
     else if (div_proc) begin
-      // synthesis parallel_case
+      (* parallel_case *)
       case (q_digit)
         3'b000:  qm_r <= {qm_r[N-3:0],2'b11};
         3'b001:  qm_r <= { q_r[N-3:0],2'b00};

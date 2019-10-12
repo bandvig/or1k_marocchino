@@ -41,7 +41,7 @@ details please see the [LICENSE](./LICENSE) file or http://juliusbaxter.net/ohdl
 
 A CPU core cannot be trusted without a full set of verification testing.  The
 `or1k_marocchino` is constantly verified for correctness with the or1k Continuous
-Integration (CI) suite running in [travis ci](travis-ci.org).  This currently covers:
+Integration (CI) suite running in [travis ci](https://travis-ci.org/). This currently covers:
 
  - source linting - a `verilator --lint-only` check is run on each commit to
    ensure there are no code quality issues.
@@ -50,6 +50,10 @@ Integration (CI) suite running in [travis ci](travis-ci.org).  This currently co
    exception handling, caching, timers, interrupts and other features.
 
    Status: [![Build Status](https://travis-ci.org/openrisc/or1k_marocchino.svg?branch=master)](https://travis-ci.org/openrisc/or1k_marocchino)
+
+The or1k Continuous Integration (CI) suite is running in a librecores-ci-openrisc docker container in Travis CI. Parallel execution of tests runs in librecores-ci-openrisc docker environment.
+ - [librecores-ci-openrisc](https://github.com/librecores/docker-images/tree/master/librecores-ci-openrisc) docker image is based on the standard [librecores/librecores-ci](https://github.com/librecores/docker-images/tree/master/librecores-ci) docker image and it largely target the [FuseSoC](https://github.com/olofk/fusesoc) use cases.  
+ - The base image includes installation of common EDA tools such as Icarus Verilog, Verilator and       Yosys that is required by CI suite for testing. librecores/libreocres-ci-openrisc docker image gets the toolchain required, downloads and compiles the or1k-tests.
 
 In the future we are working on bringing more tests including:
 
@@ -157,16 +161,7 @@ such initialization that typically means that something wrong with your testing 
 |FEATURE_FASTCONTEXTS|Enable fast context switching of register sets|`NONE`|`n/a`|not implemented|
 |FEATURE_MULTICORE|Enable the `coreid` and `numcores` SPR registers|`NONE`|`ENABLED` `NONE`|Linux SMP|
 |FEATURE_FPU|Enable the FPU|`ENABLED`|`n/a`|It presences permanently|
-|OPTION_ORFPX64A32_ABI|ABI variant to support doubles on 32-bits architectures|`GCC5`|`GCC5` `GCC9`|till GCC9 release|
-|OPTION_FTOI_ROUNDING|Select rounding behavior for `lf.ftoi.s(d)` instructions|`CPP`|`CPP` `IEEE`|see note below|
 |FEATURE_BRANCH_PREDICTOR|Select the branch predictor implementation|`GSHARE`|`n/a`|It presences permanently|
-
-**Note 6:** *C/C++ double to integer conversion assumes truncation (rounding `toward zero`).
-The default (`CPP`) value of OPTION_FTOI_ROUNDING forces `toward zero` rounding mode exclusively for
-`lf.ftoi.s(d)` instructions regardless of `rounding mode` bits of FPCSR. While with `IEEE` value
-`lf.ftoi.s(d)` perform conversion in according with `rounding mode` bits of FPCSR. And these bits are
-`nearest-even` rounding mode by default. All other floating point instructions always perform rounding
-in according with `rounding mode` bits of FPCSR.*
 
 ### Exception handling options
 

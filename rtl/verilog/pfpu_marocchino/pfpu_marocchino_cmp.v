@@ -265,7 +265,7 @@ module pfpu_marocchino_cmp
   wire cmp_flag = (s1o_unordered_cmp_bit & anan) | generic_cmp_flag;
   // ---
   always @(altb or blta or aeqb or s1o_generic_cmp_opc) begin
-    // synthesis parallel_case
+    (* parallel_case *)
     case (s1o_generic_cmp_opc)
       GENERIC_SFEQ: generic_cmp_flag = aeqb;
       GENERIC_SFNE: generic_cmp_flag = ~aeqb;

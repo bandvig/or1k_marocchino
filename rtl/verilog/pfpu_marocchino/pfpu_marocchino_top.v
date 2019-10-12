@@ -53,9 +53,6 @@
 
 
 module pfpu_marocchino_top
-#(
-  parameter OPTION_FTOI_ROUNDING = "CPP" // "CPP" (force toward zero; default) / "IEEE" (by rounding mode bits from FPCSR)
-)
 (
   // clock & reset
   input                               cpu_clk,
@@ -521,11 +518,7 @@ end
 
 
 // multiplexing and rounding
-pfpu_marocchino_rnd
-#(
-  .OPTION_FTOI_ROUNDING       (OPTION_FTOI_ROUNDING) // PFPU_RND
-)
-u_pfpu_rnd
+pfpu_marocchino_rnd  u_pfpu_rnd
 (
   // clocks, resets
   .cpu_clk                    (cpu_clk), // PFPU_RND

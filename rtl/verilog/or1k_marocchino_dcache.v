@@ -340,7 +340,7 @@ module or1k_marocchino_dcache
       spr_bus_ack_o <= 1'b0; // on reset
     end
     else begin
-      // synthesis parallel_case
+      (* parallel_case *)
       case (dc_state)
         DC_CHECK: begin
           if (s2o_snoop_hit) begin // check -> snoop-inv
@@ -423,7 +423,7 @@ module or1k_marocchino_dcache
   //
   always @(posedge cpu_clk) begin
     // states switching
-    // synthesis parallel_case
+    (* parallel_case *)
     case (dc_state)
       DC_CHECK: begin
         // next states
@@ -498,7 +498,7 @@ module or1k_marocchino_dcache
     {virt_addr_rfl_r[31:4], virt_addr_rfl_r[3:0] + 4'd4};  // 16 byte = (4 words x 32 bits/word)
   // ---
   always @(posedge cpu_clk) begin
-    // synthesis parallel_case
+    (* parallel_case *)
     case (dc_state)
       DC_CHECK: begin // re-fill address register
         if (s2o_snoop_hit)      // set re-fill address register to invaldate by snoop-hit
@@ -585,7 +585,7 @@ module or1k_marocchino_dcache
     way_we  = {OPTION_DCACHE_WAYS{1'b0}}; // default
     way_din = dbus_dat_i; // default as for re-fill
 
-    // synthesis parallel_case
+    (* parallel_case *)
     case (dc_state)
       DC_CHECK: begin
         if (s2o_dc_ack_read & (~s2o_excepts_addr_i)) begin // on read-hit

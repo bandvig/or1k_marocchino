@@ -293,7 +293,7 @@ module or1k_marocchino_int_1clk
   reg  [EXEDW-1:0] extsz_result;
   // ---
   always @(exec_opc_extsz_i or extsz_a1) begin
-    // synthesis parallel_case
+    (* parallel_case *)
     case (exec_opc_extsz_i)
       {1'b0,`OR1K_ALU_OPC_SECONDARY_EXTBH_EXTBS}:
         extsz_result = {{(EXEDW-8){extsz_a1[7]}}, extsz_a1[7:0]};
@@ -383,7 +383,7 @@ module or1k_marocchino_int_1clk
   reg flag_set;
   always @(exec_opc_setflag_i or a_eq_b  or
            a_lts_b or a_les_b or a_ltu_b or a_leu_b) begin
-    // synthesis parallel_case
+    (* parallel_case *)
     case (exec_opc_setflag_i)
       `OR1K_COMP_OPC_LES: flag_set =  a_les_b;
       `OR1K_COMP_OPC_LTS: flag_set =  a_lts_b;
