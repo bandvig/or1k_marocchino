@@ -226,7 +226,7 @@ module or1k_marocchino_decode
   reg [1:0] lsu_length;
   // ---
   always @(opc_insn)
-    // synthesis parallel_case
+    (* parallel_case *)
     case (opc_insn)
       // byte
       `OR1K_OPCODE_SB,
@@ -455,7 +455,7 @@ module or1k_marocchino_decode
   reg attr_rfb2_req;
   // ---
   always @(*) begin
-    // synthesis parallel_case
+    (* parallel_case *)
     case (opc_insn)
       `OR1K_OPCODE_J,     // pc <- pc + exts(Imm26 << 2)
       `OR1K_OPCODE_JAL,   // pc <- pc + exts(Imm26 << 2)
@@ -606,7 +606,7 @@ module or1k_marocchino_decode
 
       `OR1K_OPCODE_SHRTI:
         begin
-          // synthesis parallel_case
+          (* parallel_case *)
           case (opc_shift)
             `OR1K_ALU_OPC_SECONDARY_SHRT_SLL, // rD <- SLLI(rA,Imm6)
             `OR1K_ALU_OPC_SECONDARY_SHRT_SRL, // rD <- SRLI(rA,Imm6)
@@ -635,7 +635,7 @@ module or1k_marocchino_decode
 
       `OR1K_OPCODE_ALU:
         begin
-          // synthesis parallel_case
+          (* parallel_case *)
           case (opc_alu)
             `OR1K_ALU_OPC_EXTBH, // rD <- zero/sign extention (rA) for 8- and 16- bits
             `OR1K_ALU_OPC_EXTW,  // rD <- rA for 32-bits
@@ -677,7 +677,7 @@ module or1k_marocchino_decode
 
             `OR1K_ALU_OPC_SHRT:
               begin
-                // synthesis parallel_case
+                (* parallel_case *)
                 case (opc_shift)
                   `OR1K_ALU_OPC_SECONDARY_SHRT_SLL, // rD <- SLL(rA,rB)
                   `OR1K_ALU_OPC_SECONDARY_SHRT_SRL, // rD <- SRL(rA,rB)
@@ -716,7 +716,7 @@ module or1k_marocchino_decode
         end // case or1k-opcode-alu
 
       `OR1K_OPCODE_SYSTRAPSYNC: begin
-        // synthesis parallel_case
+        (* parallel_case *)
         case (fetch_insn_i[`OR1K_SYSTRAPSYNC_OPC_SELECT])
           `OR1K_SYSTRAPSYNC_OPC_TRAP,
           `OR1K_SYSTRAPSYNC_OPC_SYSCALL:

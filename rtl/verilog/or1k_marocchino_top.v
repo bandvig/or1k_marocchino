@@ -31,9 +31,6 @@ module or1k_marocchino_top
 #(
   parameter OPTION_OPERAND_WIDTH        = 32,
 
-  // temporary:
-  parameter OPTION_FTOI_ROUNDING        = "CPP", // "CPP" (force toward zero; default) / "IEEE" (by rounding mode bits from FPCSR)
-
   // data cache configuration
   parameter OPTION_DCACHE_BLOCK_WIDTH   =  5,
   parameter OPTION_DCACHE_SET_WIDTH     =  8,
@@ -295,8 +292,6 @@ module or1k_marocchino_top
   or1k_marocchino_cpu
   #(
     .OPTION_OPERAND_WIDTH             (OPTION_OPERAND_WIDTH), // CPU
-    // temporary:
-    .OPTION_FTOI_ROUNDING             (OPTION_FTOI_ROUNDING), // CPU
     // data cache
     .OPTION_DCACHE_BLOCK_WIDTH        (OPTION_DCACHE_BLOCK_WIDTH), // CPU
     .OPTION_DCACHE_SET_WIDTH          (OPTION_DCACHE_SET_WIDTH), // CPU

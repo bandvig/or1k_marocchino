@@ -190,7 +190,7 @@ module or1k_marocchino_immu
       spr_immu_state_r <= SPR_IMMU_RST; // on cpu-reset
     end
     else begin
-      // synthesis parallel_case
+      (* parallel_case *)
       case (spr_immu_state_r)
         // wait SPR BUS request
         SPR_IMMU_WAIT: begin
@@ -214,7 +214,7 @@ module or1k_marocchino_immu
 
   // SPR processing cycle: controls
   always @(posedge cpu_clk) begin
-    // synthesis parallel_case
+    (* parallel_case *)
     case (spr_immu_state_r)
       // wait SPR BUS request
       SPR_IMMU_WAIT: begin
@@ -417,7 +417,7 @@ module or1k_marocchino_immu
       itlb_match_reload_we_r  <= 1'b0;
       itlb_match_reload_din_r <= {OPTION_OPERAND_WIDTH{1'b0}};
 
-      // synthesis parallel_case
+      (* parallel_case *)
       case (tlb_reload_state)
         TLB_IDLE: begin
           tlb_reload_huge_r <= 1'b0;
@@ -653,7 +653,7 @@ module or1k_marocchino_immu
       immu_cache_state  <= IMMU_CACHE_EMPTY; // reset / flush / predict-miss
     end
     else begin
-      // synthesis parallel_case
+      (* parallel_case *)
       case (immu_cache_state)
         // waiting 1-st request after reset / flush / predict-miss
         IMMU_CACHE_EMPTY: begin
@@ -765,7 +765,7 @@ module or1k_marocchino_immu
 
   // IMMU's physical address output
   always @(posedge cpu_clk) begin
-    // synthesis parallel_case
+    (* parallel_case *)
     case (immu_cache_state)
       // update cache output
       IMMU_CACHE_UPD: begin

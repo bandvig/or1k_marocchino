@@ -156,7 +156,7 @@ module or1k_marocchino_int_1clk
   wire [EXEDW-1:0] ffl1_result = {{(EXEDW-6){1'b0}}, (exec_opc_ffl1_i ? fl1_r : ff1_r)};
   // ---
   always @(exec_1clk_a1_m) begin
-    // synthesis parallel_case
+    (* parallel_case *)
     casez  (exec_1clk_a1_m)
       32'b1???????????????????????????????: fl1_r = 6'd32;
       32'b01??????????????????????????????: fl1_r = 6'd31;
@@ -192,7 +192,7 @@ module or1k_marocchino_int_1clk
       32'b00000000000000000000000000000001: fl1_r = 6'd1;
       32'b00000000000000000000000000000000: fl1_r = 6'd0;
     endcase
-    // synthesis parallel_case
+    (* parallel_case *)
     casez  (exec_1clk_a1_m)
       32'b10000000000000000000000000000000: ff1_r = 6'd32;
       32'b?1000000000000000000000000000000: ff1_r = 6'd31;
@@ -272,7 +272,7 @@ module or1k_marocchino_int_1clk
   reg [EXEDW-1:0] extsz_result;
   // ---
   always @(exec_opc_extsz_i or exec_1clk_a1_m) begin
-    // synthesis parallel_case
+    (* parallel_case *)
     case (exec_opc_extsz_i)
       {1'b0,`OR1K_ALU_OPC_SECONDARY_EXTBH_EXTBS}:
         extsz_result = {{(EXEDW-8){exec_1clk_a1_m[7]}}, exec_1clk_a1_m[7:0]};
@@ -335,7 +335,7 @@ module or1k_marocchino_int_1clk
   // comb.
   reg flag_set;
   always @(exec_opc_setflag_i or a_eq_b or a_lts_b or a_ltu_b) begin
-    // synthesis parallel_case
+    (* parallel_case *)
     case(exec_opc_setflag_i)
       `OR1K_COMP_OPC_EQ:  flag_set = a_eq_b;
       `OR1K_COMP_OPC_NE:  flag_set = ~a_eq_b;

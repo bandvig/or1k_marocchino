@@ -295,7 +295,7 @@ module or1k_marocchino_fetch
            jr_gathering_target_r or s1o_virt_addr      or
                                     s1r_virt_addr_next)
   begin
-    // synthesis parallel_case
+    (* parallel_case *)
     case ({do_branch_i, jr_gathering_target_r})
       2'b11, 2'b10: virt_addr_mux = do_branch_target_i;
       2'b01:        virt_addr_mux = s1o_virt_addr;
@@ -478,7 +478,7 @@ module or1k_marocchino_fetch
       ibus_state    <= IBUS_IDLE;  // by reset
     end
     else begin
-      // synthesis parallel_case
+      (* parallel_case *)
       case (ibus_state)
         IBUS_IDLE: begin
           if (spr_bus_stb_i | pipeline_flush_i | predict_miss_i | s2o_fetch_an_except) // IBUS-IDLE

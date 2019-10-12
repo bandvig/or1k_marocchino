@@ -298,7 +298,7 @@ module or1k_marocchino_bus_if_wb32
         dbus_state_r <= DBUS_WAITING_CPU_REQ;
       end
       else begin
-        // synthesis parallel_case
+        (* parallel_case *)
         case (dbus_state_r)
           // waiting CPU request
           // l.swa could be "another l.swa" (i.e. to another location),

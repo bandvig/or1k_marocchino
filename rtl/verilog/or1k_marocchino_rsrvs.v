@@ -187,7 +187,7 @@ module or1k_marocchino_rsrvs
       busy_opc_r    <= {OPC_WIDTH{1'b0}};
     end
     else begin
-      // synthesis parallel_case
+      (* parallel_case *)
       case ({padv_exec_l, padv_rsrvs_i})
         // keep state
         2'b00:;
@@ -466,7 +466,7 @@ module or1k_marocchino_rsrvs
       exec_opc_r    <= {OPC_WIDTH{1'b0}};
     end
     else begin
-      // synthesis parallel_case
+      (* parallel_case *)
       case ({padv_exec_l, padv_rsrvs_i})
         // EXEC registers are occuped
         2'b00, 2'b01:;
@@ -520,7 +520,7 @@ module or1k_marocchino_rsrvs
 
   // registers for operands A1 & B1
   always @(posedge cpu_clk) begin
-    // synthesis parallel_case
+    (* parallel_case *)
     case ({padv_exec_l, padv_rsrvs_i})
       // EXEC registers are occuped
       2'b00, 2'b01:;
@@ -549,7 +549,7 @@ module or1k_marocchino_rsrvs
     reg [OPTION_OPERAND_WIDTH-1:0] exec_rfb2_r;
     // ---
     always @(posedge cpu_clk) begin
-      // synthesis parallel_case
+      (* parallel_case *)
       case ({padv_exec_l, padv_rsrvs_i})
         // EXEC registers are occuped
         2'b00, 2'b01:;
@@ -791,7 +791,7 @@ module or1k_marocchino_rsrvs_1clk
       busy_hazard_dxb1_r  <= 1'b0; // flush
     end
     else begin
-      // synthesis parallel_case
+      (* parallel_case *)
       case ({padv_exec_l, padv_rsrvs_i})
         // just resolving hazards
         2'b00: begin
@@ -936,7 +936,7 @@ module or1k_marocchino_rsrvs_1clk
       exec_1clk_ff_d1b1_r <= 1'b0;
     end
     else begin
-      // synthesis parallel_case
+      (* parallel_case *)
       case ({padv_exec_l, padv_rsrvs_i})
         // EXEC registers are occuped
         2'b00, 2'b01:;
@@ -998,7 +998,7 @@ module or1k_marocchino_rsrvs_1clk
 
   // registers for operands A1 & B1
   always @(posedge cpu_clk) begin
-    // synthesis parallel_case
+    (* parallel_case *)
     case ({padv_exec_l, padv_rsrvs_i})
       // EXEC registers are occuped
       2'b00, 2'b01:;
