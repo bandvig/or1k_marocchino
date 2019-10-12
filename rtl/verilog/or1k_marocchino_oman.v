@@ -545,7 +545,7 @@ module or1k_marocchino_oman
       jr_gathering_target_p <= 1'b0;
     end
     else begin
-      // synthesis parallel_case
+      (* parallel_case *)
       case (jr_fsm_state_r)
         // catching j/b on IFETCH output
         JR_FSM_CATCHING_JR: begin
@@ -665,7 +665,7 @@ module or1k_marocchino_oman
       predict_flag_alloc_r <= 1'b0; // flush pipe
     end
     else begin
-      // synthesis parallel_case
+      (* parallel_case *)
       case (bc_fsm_state_r)
         // catching j/b on IFETCH output
         BC_FSM_CATCHING_BC: begin

@@ -312,7 +312,7 @@ module pfpu_marocchino_rnd
   //       8 in single precision case
   reg s1r_sticky;
   always @(s1t_fract57 or s0o_shr) begin
-    // synthesis parallel_case
+    (* parallel_case *)
     case (s0o_shr)
       6'd0   : s1r_sticky = |s1t_fract57[ 1:0];
       6'd1   : s1r_sticky = |s1t_fract57[ 2:0];
@@ -379,7 +379,7 @@ module pfpu_marocchino_rnd
   // ---
   reg s1l_sticky;
   always @(s1t_fract2 or s0o_shl) begin
-    // synthesis parallel_case
+    (* parallel_case *)
     case (s0o_shl)
       6'd0   : s1l_sticky = |s1t_fract2;
       6'd1   : s1l_sticky =  s1t_fract2[0];

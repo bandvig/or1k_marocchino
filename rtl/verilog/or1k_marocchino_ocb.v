@@ -498,7 +498,7 @@ module or1k_marocchino_oreg_buff
            rtk_addr_r    or
            wop_addr_r    or wop_addr_nxt)
   begin
-    // synthesis parallel_case
+    (* parallel_case *)
     case ({ram_re, ram_we})
       // keep state
       2'b00: begin
@@ -749,7 +749,7 @@ module or1k_marocchino_ff_oreg_buff
            rtk_addr_r    or
            wop_addr_r    or wop_addr_nxt)
   begin
-    // synthesis parallel_case
+    (* parallel_case *)
     case ({ram_re, ram_we})
       // keep state
       2'b00: begin
@@ -873,7 +873,7 @@ module or1k_marocchino_ff_oreg_buff
            data_i      or data_o     or
            ram_dout    or oreg_rdy_r)
   begin
-    // synthesis parallel_case
+    (* parallel_case *)
     case ({read_i, write_i})
       // keep state
       2'b00: begin
@@ -1064,7 +1064,7 @@ module or1k_marocchino_ocbuff_miss
            write_pointer_r or write_pointer_inc or write_pointer_miss_r or
            read_pointer_r  or read_pointer_inc  or
            ocbi_i          or ram_dout          or ocbo_o) begin
-    // synthesis parallel_case
+    (* parallel_case *)
     case ({read_i, (write_i | is_miss_r)})
       // keep state
       2'b00: begin

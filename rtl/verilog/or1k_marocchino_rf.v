@@ -228,7 +228,7 @@ module or1k_marocchino_rf
         spr_gprS_state <= SPR_GPRS_WAITING;
       end
       else begin
-        // synthesis parallel_case
+        (* parallel_case *)
         case (spr_gprS_state)
           // waiting Shadow GPRs access
           SPR_GPRS_WAITING: begin
@@ -363,7 +363,7 @@ module or1k_marocchino_rf
         spr_gpr0_state <= SPR_GPR0_WAITING;
       end
       else begin
-        // synthesis parallel_case
+        (* parallel_case *)
         case (spr_gpr0_state)
           // waiting Group #0 GPRs access
           SPR_GPR0_WAITING: begin
@@ -703,7 +703,7 @@ module or1k_marocchino_rf
   always @(dcod_op_jal_i    or pc_decode_i    or
            wrb2dec_d1a1_fwd or wrbk_result1_i or
            ram_rfa1_out) begin
-    // synthesis parallel_case
+    (* parallel_case *)
     casez ({dcod_op_jal_i, wrb2dec_d1a1_fwd})
       2'b1?:   dcod_rfa1_o = pc_decode_i;
       2'b01:   dcod_rfa1_o = wrbk_result1_i;
@@ -716,7 +716,7 @@ module or1k_marocchino_rf
            dcod_immediate_sel_i or dcod_immediate_i or
            wrb2dec_d1b1_fwd     or wrbk_result1_i   or
            ram_rfb1_out) begin
-    // synthesis parallel_case
+    (* parallel_case *)
     casez ({dcod_op_jal_i, dcod_immediate_sel_i, wrb2dec_d1b1_fwd})
       3'b1??:  dcod_rfb1_o = 32'd8; // (FEATURE_DELAY_SLOT == "ENABLED")
       3'b01?:  dcod_rfb1_o = dcod_immediate_i;
