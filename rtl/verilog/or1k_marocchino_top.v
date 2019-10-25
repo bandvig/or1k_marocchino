@@ -49,7 +49,7 @@ module or1k_marocchino_top
   parameter OPTION_STORE_BUFFER_DEPTH_WIDTH   = 4, // 16 taps
   parameter OPTION_STORE_BUFFER_CLEAR_ON_INIT = 0, // !!! activate for simulation only !!!
 
-  // istruction cache
+  // instruction cache
   parameter OPTION_ICACHE_BLOCK_WIDTH   =  5,
   parameter OPTION_ICACHE_SET_WIDTH     =  8,
   parameter OPTION_ICACHE_WAYS          =  2,
@@ -92,7 +92,7 @@ module or1k_marocchino_top
   input                             cpu_clk,
   input                             cpu_rst,
 
-  // Wishbone interface (istruction)
+  // Wishbone interface (instruction)
   output [31:0]                     iwbm_adr_o,
   output                            iwbm_stb_o,
   output                            iwbm_cyc_o,
@@ -327,7 +327,7 @@ module or1k_marocchino_top
     // m-core
     .FEATURE_MULTICORE                (FEATURE_MULTICORE), // CPU
     .OPTION_RF_NUM_SHADOW_GPR         (OPTION_RF_NUM_SHADOW_GPR), // CPU
-    // Redister File
+    // Register File
     .OPTION_RF_CLEAR_ON_INIT          (OPTION_RF_CLEAR_ON_INIT), // CPU
     .OPTION_RF_ADDR_WIDTH             (OPTION_RF_ADDR_WIDTH), // CPU
     //.OPTION_RF_WORDS(OPTION_RF_WORDS), // MAROCCHINO_TODO

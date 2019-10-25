@@ -12,7 +12,7 @@
 //
 // clog2 - replacement for $clog for tools that doesn't support verilog 2005.
 // However, icarus doesn't support constant user functions, so it has to be
-// implemened with a bit of `define trickery.
+// implemented with a bit of `define trickery.
 //
 `ifdef __ICARUS__
 `define clog2 $clog2

@@ -162,7 +162,7 @@ module or1k_marocchino_lsu
   reg         [1:0] s2o_length;
   reg               s2o_zext;
   //  # load processing
-  //    ## cachable area
+  //    ## cacheable area
   wire              s2t_dc_ack_read;
   reg               s2o_dc_ack_read;
   wire [LSUOOW-1:0] s2t_dc_dat;
@@ -171,7 +171,7 @@ module or1k_marocchino_lsu
   reg               s2o_dc_refill_req;
   wire              dc_refill_allowed;
   wire              dc_refill_first;
-  //    ## none cachable area
+  //    ## non cacheable area
   wire              s2t_dbus_read_req;
   reg               s2o_dbus_read_req;
   wire              dbus_load_ack;
@@ -185,7 +185,7 @@ module or1k_marocchino_lsu
   //  # DBUS "bsel" and formatted data to store
   reg         [3:0] s2o_bsel;
   reg  [LSUOOW-1:0] s2o_sdat;     // register file B in (store operand)
-  wire              dbus_swa_ack; // complete DBUS trunsaction with l.swa
+  wire              dbus_swa_ack; // complete DBUS transaction with l.swa
   //    ## combined store ACK
   wire              s3t_store_ack;
 
@@ -246,7 +246,7 @@ module or1k_marocchino_lsu
 
 
   // Exceptions detected on DCACHE/DBUS access stage
-  //  # latched address convertion exceptions
+  //  # latched address conversion exceptions
   reg               s2o_tlb_miss;
   reg               s2o_pagefault;
   reg               s2o_align;
@@ -368,7 +368,7 @@ module or1k_marocchino_lsu
 
   // virtual address
   // it must be set to an appropriate value (zero for example)
-  // at CPU reset to support DCACHE invalidation proccess
+  // at CPU reset to support DCACHE invalidation process
   // being held before 1st load command
   always @(posedge cpu_clk) begin
     if (cpu_rst)                          // clean up stage #1 virtual address
@@ -499,7 +499,7 @@ module or1k_marocchino_lsu
 
   // Condition to restore re-fill state in DCACHE
   // after snoop invalidation completion.
-  //  Pay attention that if re-fiil once initiated
+  //  Pay attention that if re-fill once initiated
   // it could not be interrupted by pipe flushing
   assign dc_snoop2refill = dc_refill_allowed | dc_refill_state;
 
@@ -589,7 +589,7 @@ module or1k_marocchino_lsu
 
   // --- bus error during bus access from store buffer ---
   //  ## pay attention that l.swa is executed around of
-  //     store buffer, so we don't take it into accaunt here.
+  //     store buffer, so we don't take it into account here.
   wire sbuf_err = dbus_stna_cmd_o & dbus_err_i; // to force empty STORE_BUFFER
   // ---
   always @(posedge cpu_clk) begin
@@ -657,8 +657,8 @@ module or1k_marocchino_lsu
 
         DBUS_READ: begin
           if (dbus_err_i | dbus_ack_i) begin  // dbus-read
-            dbus_lwa_cmd_o <= 1'b0;           // dbus-read: eror OR complete
-            dbus_state     <= DBUS_IDLE;      // dbus-read: eror OR complete
+            dbus_lwa_cmd_o <= 1'b0;           // dbus-read: error OR complete
+            dbus_state     <= DBUS_IDLE;      // dbus-read: error OR complete
           end
         end // dbus-read
 
@@ -854,7 +854,7 @@ module or1k_marocchino_lsu
       // load command attributes
       s2o_length    <= s1o_lsu_length;
       s2o_zext      <= s1o_lsu_zext;
-      // virtual and physical addersses
+      // virtual and physical addresses
       s2o_virt_addr <= s1o_virt_addr;
       s2o_phys_addr <= s2t_phys_addr;
     end
@@ -1043,7 +1043,7 @@ module or1k_marocchino_lsu
 
 
   // LSU's output data set registered by WriteBack miss
-  // Write-Back-output assignement
+  // Write-Back-output assignment
   reg  [LSUOOW-1:0] s3o_lsu_result;
   reg  [LSUOOW-1:0] s3o_lsu_except_addr;
   // Atomic operation flag set/clear logic
@@ -1060,7 +1060,7 @@ module or1k_marocchino_lsu
   // ---
   always @(posedge cpu_clk) begin
     if (lsu_s3_adv) begin // save output data set in "miss" register
-      // Write-Back-output assignement
+      // Write-Back-output assignment
       s3o_lsu_result        <= s3t_ldat_extended;
       s3o_lsu_except_addr   <= s2o_virt_addr;
       // Atomic operation flag set/clear logic
@@ -1076,7 +1076,7 @@ module or1k_marocchino_lsu
     end
   end // @clock
 
-  // pre-Write-Back exceprions & errors
+  // pre-Write-Back exceptions & errors
   assign exec_an_except_lsu_o = (wrbk_lsu_miss_r ? s3o_excepts_any : s2o_excepts_any) & grant_wrbk_to_lsu_i;
 
   // Write-Back-registered load result and exception address

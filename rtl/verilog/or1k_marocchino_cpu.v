@@ -60,7 +60,7 @@ module or1k_marocchino_cpu
   // m-core
   parameter FEATURE_MULTICORE           = "NONE",
   parameter OPTION_RF_NUM_SHADOW_GPR    = 0,      // for multicore mostly
-  // Redister File
+  // Register File
   parameter OPTION_RF_CLEAR_ON_INIT     = 0,
   parameter OPTION_RF_ADDR_WIDTH        = 5,
   // starting PC
@@ -155,7 +155,7 @@ module or1k_marocchino_cpu
   wire                            fetch_valid;
   //  # instruction is in delay slot
   wire                            fetch_delay_slot;
-  //  # instruction word itsef
+  //  # instruction word itself
   wire     [`OR1K_INSN_WIDTH-1:0] fetch_insn;
   //  # operand addresses
   wire [OPTION_RF_ADDR_WIDTH-1:0] fetch_rfa1_adr;
@@ -187,8 +187,8 @@ module or1k_marocchino_cpu
 
 
   // Write-back outputs per execution unit
-  // !!! Copies are usefull mostly for FPGA implementation to simplify routing
-  // !!! Don't acivate "Remove duplicate registers" option in
+  // !!! Copies are useful mostly for FPGA implementation to simplify routing
+  // !!! Don't activate "Remove duplicate registers" option in
   // !!! MAROCCHINO_TODO: <determine optimal settings>
   //  # from 1-clock execution units
   wire [OPTION_OPERAND_WIDTH-1:0] wrbk_1clk_result;
@@ -207,7 +207,7 @@ module or1k_marocchino_cpu
   // Combined write-back outputs
   //  # regular result
   reg  [OPTION_OPERAND_WIDTH-1:0] wrbk_result1;     // Write-Back result combiner
-  //  # extention for FPU3264
+  //  # extension for FPU3264
   wire [OPTION_OPERAND_WIDTH-1:0] wrbk_result2;     // Write-Back result combiner for FPU64
 
 
@@ -296,7 +296,7 @@ module or1k_marocchino_cpu
   wire                            jr_gathering_target;
   //  ## support IBUS error handling in CTRL
   wire                            wrbk_jump_or_branch;
-  //  ## do branch (pedicted or unconditional)
+  //  ## do branch (predicted or unconditional)
   wire                            do_branch;
   wire [OPTION_OPERAND_WIDTH-1:0] do_branch_target;
   //  ## branch prediction support
@@ -417,7 +417,7 @@ module or1k_marocchino_cpu
   wire                                   wrbk_fpxx_cmp_inf;
   wire                                   wrbk_fpxx_cmp_fpcsr_we;
   wire                                   wrbk_except_fpxx_cmp;
-  // FPU3264 reservationstation controls
+  // FPU3264 reservation station controls
   wire                                   dcod_op_fpxx_any;
   wire                                   fpxx_free;
   wire                                   fpxx_taking_op;
@@ -540,10 +540,10 @@ module or1k_marocchino_cpu
   //  # from "Tick Timer"
   wire        tt_rdy;
   wire        tt_interrupt_enable;
-  //  # from "Programmble Interrupt Controller"
+  //  # from "Programmable Interrupt Controller"
   wire        pic_rdy; // an interrupt
   wire        pic_interrupt_enable;
-  //  # flag to enabel/disable exterlal interrupts processing
+  //  # flag to enable/disable external interrupts processing
   //    depending on the fact is instructions restartable or not
   wire        exec_interrupts_en;
   //  # Write-Back latches
@@ -551,7 +551,7 @@ module or1k_marocchino_cpu
   reg         wrbk_pic_interrupt_r;
 
 
-  // Exeptions process:
+  // Exceptions process:
   wire dcod_op_rfe;
   wire exec_op_rfe;
   reg  wrbk_op_rfe_r;
@@ -660,7 +660,7 @@ module or1k_marocchino_cpu
     .fetch_op_jb_o                    (fetch_op_jb), // FETCH
     //  # "to immediate driven target"
     .fetch_to_imm_target_o            (fetch_to_imm_target), // FETCH
-    //  # do branch (pedicted or unconditional)
+    //  # do branch (predicted or unconditional)
     .do_branch_i                      (do_branch), // FETCH
     .do_branch_target_i               (do_branch_target), // FETCH
     .jr_gathering_target_i            (jr_gathering_target), // FETCH
@@ -683,7 +683,7 @@ module or1k_marocchino_cpu
     .fetch_valid_o                    (fetch_valid), // FETCH
     //  # instruction is in delay slot
     .fetch_delay_slot_o               (fetch_delay_slot), // FETCH
-    //  # instruction word itsef
+    //  # instruction word itself
     .fetch_insn_o                     (fetch_insn), // FETCH
     //  # operand addresses
     .fetch_rfa1_adr_o                 (fetch_rfa1_adr), // FETCH
@@ -767,7 +767,7 @@ module or1k_marocchino_cpu
     // # for FPU64
     .dcod_rfa2_o                      (dcod_rfa2), // RF
     .dcod_rfb2_o                      (dcod_rfb2), // RF
-    // we use adder for l.jl/l.jalr to compute return address: (pc+8)
+    // we use adder for l.jr/l.jalr to compute return address: (pc+8)
     .dcod_op_jal_i                    (dcod_op_jal), // RF
     .pc_decode_i                      (pc_decode), // RF
     // Special case for l.jr/l.jalr
@@ -842,7 +842,7 @@ module or1k_marocchino_cpu
     begin
       $display("Error: MAROCCHINO pipeline does not support set_gpr");
       $finish();
-      // This doesnt work you can't address a element generated in a for
+      // This doesn't work you can't address a element generated in a for
       // loop.
       //u_rf.u_single_gpr[gpr_num].gpr_r = gpr_value;
     end
@@ -876,7 +876,7 @@ module or1k_marocchino_cpu
     .fetch_an_except_i                (fetch_an_except), // DECODE
     //  # instruction is in delay slot
     .fetch_delay_slot_i               (fetch_delay_slot), // DECODE
-    //  # instruction word itsef
+    //  # instruction word itself
     .fetch_insn_i                     (fetch_insn), // DECODE
     //  # operands addresses
     .fetch_rfa1_adr_i                 (fetch_rfa1_adr), // DECODE
@@ -931,7 +931,7 @@ module or1k_marocchino_cpu
     .dcod_op_push_wrbk_o              (dcod_op_push_wrbk), // DECODE
     // 1-clock instruction
     .dcod_op_1clk_o                   (dcod_op_1clk), // DECODE
-    // Reqired flag or carry
+    // Required flag or carry
     .dcod_flag_carry_req_o            (dcod_flag_carry_req), // DECODE
     // Adder related
     .dcod_op_add_o                    (dcod_op_add), // DECODE
@@ -1039,7 +1039,7 @@ module or1k_marocchino_cpu
     .dcod_op_fpxx_cmp_i         (dcod_op_fpxx_cmp), // OMAN
 
     // DECODE non-latched additional information related instruction
-    //  part #1: iformation stored in order control buffer
+    //  part #1: information stored in order control buffer
     .pc_decode_i                (pc_decode), // OMAN
     .dcod_rfd1_adr_i            (dcod_rfd1_adr), // OMAN
     .dcod_rfd1_we_i             (dcod_rfd1_we), // OMAN
@@ -1132,7 +1132,7 @@ module or1k_marocchino_cpu
     // register target
     .dcod_rfb1_jr_i             (dcod_rfb1_jr), // OMAN
     .wrbk_result1_i             (wrbk_result1), // OMAN
-    // comparision flag for l.bf / l.bnf
+    // comparison flag for l.bf / l.bnf
     .ctrl_flag_sr_i             (ctrl_flag_sr), // OMAN
     // jump/branch signals to IFETCH
     .do_branch_o                (do_branch), // OMAN
@@ -1153,7 +1153,7 @@ module or1k_marocchino_cpu
     .wrbk_op_bf_o               (wrbk_op_bf), // OMAN
     .wrbk_jb_target_o           (wrbk_jb_target), // OMAN
 
-    //   Flag to enabel/disable exterlal interrupts processing
+    //   Flag to enable/disable external interrupts processing
     // depending on the fact is instructions restartable or not
     .exec_interrupts_en_o       (exec_interrupts_en), // OMAN
 
@@ -1251,10 +1251,10 @@ module or1k_marocchino_cpu
     // input data from DECODE
     .dcod_rfxx_i                ({dcod_rfb1, dcod_rfa1}), // 1CLK_RSVRS
     // OMAN-to-DECODE hazards
-    //  # hazards flags
+    //  # hazard flags
     .omn2dec_hazards_flags_i    ({omn2dec_hazard_d2b1, omn2dec_hazard_d1b1, // 1CLK_RSVRS
                                   omn2dec_hazard_d2a1, omn2dec_hazard_d1a1}), // 1CLK_RSVRS
-    //  # hasards addresses
+    //  # hazard addresses
     .omn2dec_hazards_addrs_i    ({omn2dec_extadr_dxb1, omn2dec_extadr_dxa1}), // 1CLK_RSVRS
     // support in-1clk-unit forwarding
     .dcod_rfd1_we_i             (dcod_rfd1_we), // 1CLK_RSVRS
@@ -1323,7 +1323,7 @@ module or1k_marocchino_cpu
 
     // any 1-clock sub-unit
     .exec_op_1clk_i                   (exec_op_1clk), // 1CLK_EXEC
-    // Reqired flag or carry
+    // Required flag or carry
     .exec_flag_carry_req_i            (exec_flag_carry_req), // 1CLK_EXEC
     // adder
     .exec_op_add_i                    (exec_op_add), // 1CLK_EXEC
@@ -1439,7 +1439,7 @@ module or1k_marocchino_cpu
     //  # hazards flags
     .omn2dec_hazards_flags_i    ({omn2dec_hazard_d2b1, omn2dec_hazard_d1b1, // MULDIV_RSRVS
                                   omn2dec_hazard_d2a1, omn2dec_hazard_d1a1}), // MULDIV_RSRVS
-    //  # hasards addresses
+    //  # hazard addresses
     .omn2dec_hazards_addrs_i    ({omn2dec_extadr_dxb1, omn2dec_extadr_dxa1}), // MULDIV_RSRVS
     // Hazard could be resolving
     //  ## write-back attributes
@@ -1617,7 +1617,7 @@ module or1k_marocchino_cpu
                                   omn2dec_hazard_d2a2, omn2dec_hazard_d1a2, // FPU_RSRVS
                                   omn2dec_hazard_d2b1, omn2dec_hazard_d1b1, // FPU_RSRVS
                                   omn2dec_hazard_d2a1, omn2dec_hazard_d1a1}), // FPU_RSRVS
-    //  # hasards addresses
+    //  # hazards addresses
     .omn2dec_hazards_addrs_i    ({omn2dec_extadr_dxb2, omn2dec_extadr_dxa2, // FPU_RSRVS
                                   omn2dec_extadr_dxb1, omn2dec_extadr_dxa1}), // FPU_RSRVS
     // Hazard could be resolving
@@ -1734,7 +1734,7 @@ module or1k_marocchino_cpu
   //  # Delay slot flag and PC to compute store buffer EPCR
   wire                            exec_lsu_delay_slot;
   wire [OPTION_OPERAND_WIDTH-1:0] exec_lsu_pc;
-  //  # operands after frorwarding from Write-Back
+  //  # operands after forwarding from Write-Back
   wire [OPTION_OPERAND_WIDTH-1:0] exec_lsu_a1;
   wire [OPTION_OPERAND_WIDTH-1:0] exec_lsu_b1;
 
@@ -1800,7 +1800,7 @@ module or1k_marocchino_cpu
     //  # hazards flags
     .omn2dec_hazards_flags_i    ({omn2dec_hazard_d2b1, omn2dec_hazard_d1b1, // LSU_RSVRS
                                   omn2dec_hazard_d2a1, omn2dec_hazard_d1a1}), // LSU_RSVRS
-    //  # hasards addresses
+    //  # hazards addresses
     .omn2dec_hazards_addrs_i    ({omn2dec_extadr_dxb1, omn2dec_extadr_dxa1}), // LSU_RSVRS
     // Hazard could be resolving
     //  ## write-back attributes
@@ -1938,7 +1938,7 @@ module or1k_marocchino_cpu
                    wrbk_fpxx_arith_res_hi | wrbk_lsu_result | wrbk_mfspr_result;
   end
 
-  // --- FPU64 extention ---
+  // --- FPU64 extension ---
   assign wrbk_result2 = wrbk_fpxx_arith_res_lo;
 
 
@@ -1978,7 +1978,7 @@ module or1k_marocchino_cpu
                           exec_an_except_lsu       | sbuf_err                  |  // EXEC-AN-EXCEPT
                           exec_tt_interrupt        | exec_pic_interrupt;          // EXEC-AN-EXCEPT
 
-  // Write-Back latches for exceptions / inerrupts
+  // Write-Back latches for exceptions / interrupts
   always @(posedge cpu_clk) begin
     if (padv_wrbk) begin  // Write-Back: Exceptions and External Interrupts
       // IFETCH exceptions
@@ -2141,8 +2141,8 @@ module or1k_marocchino_cpu
     .padv_wrbk_o                      (padv_wrbk), // CTRL
     .pipeline_flush_o                 (pipeline_flush), // CTRL
 
-    // MF(T)SPR coomand processing
-    //  ## iput data & command from DECODE
+    // MF(T)SPR command processing
+    //  ## input data & command from DECODE
     .dcod_rfa1_i                      (dcod_rfa1[`OR1K_IMM_WIDTH-1:0]), // CTRL: base of addr for MT(F)SPR
     .dcod_imm16_i                     (dcod_imm16), // CTRL: offset for addr for MT(F)SPR
     .dcod_rfb1_i                      (dcod_rfb1), // CTRL: data for MTSPR
@@ -2205,7 +2205,7 @@ module or1k_marocchino_cpu
     .wrbk_tt_interrupt_i              (wrbk_tt_interrupt_r), // CTRL
     .wrbk_pic_interrupt_i             (wrbk_pic_interrupt_r), // CTRL
 
-    // Write-Back: programm counter
+    // Write-Back: program counter
     .pc_wrbk_i                        (pc_wrbk), // CTRL
     .pc_nxt_wrbk_i                    (pc_nxt_wrbk), // CTRL
     .pc_nxt2_wrbk_i                   (pc_nxt2_wrbk), // CTRL
@@ -2240,7 +2240,7 @@ module or1k_marocchino_cpu
     .wrbk_fpxx_cmp_fpcsr_we_i         (wrbk_fpxx_cmp_fpcsr_we), // CTRL
     .wrbk_except_fpxx_cmp_i           (wrbk_except_fpxx_cmp), // CTRL
 
-    //  # Excepion processing auxiliaries
+    //  # Exception processing auxiliaries
     .sbuf_eear_i                      (sbuf_eear), // CTRL
     .sbuf_epcr_i                      (sbuf_epcr), // CTRL
     .sbuf_err_i                       (sbuf_err), // CTRL

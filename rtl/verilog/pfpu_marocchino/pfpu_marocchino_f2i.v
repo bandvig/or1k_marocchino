@@ -167,9 +167,9 @@ module pfpu_marocchino_f2i
   reg   [3:0] f2i_shl_p;
   reg         f2i_ovf_p;
 
-  // pre-out multiplexsors
+  // pre-out multiplexors
   // for rounding engine we re-pack single precision 24-bits mantissa to LSBs
-  assign f2i_sign_w  = s0o_signa & (~(s0o_qnan | s0o_snan)); // if 'a' is a NaN than ouput is max. positive
+  assign f2i_sign_w  = s0o_signa & (~(s0o_qnan | s0o_snan)); // if 'a' is a NaN than output is max. positive
   assign f2i_int53_m = s0o_op_fp64_arith ? (s0o_fract53a) : ({29'd0,s0o_fract53a[52:29]});
 
   // pending data latches

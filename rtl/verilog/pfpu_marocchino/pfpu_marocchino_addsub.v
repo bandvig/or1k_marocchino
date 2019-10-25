@@ -52,7 +52,7 @@ module pfpu_marocchino_addsub
   // ADD/SUB pipe controls
   input             pipeline_flush_i,
   input             add_start_i,
-  input             exec_op_fpxx_sub_i,         // 1: substruction, 0: addition
+  input             exec_op_fpxx_sub_i,         // 1: subtraction, 0: addition
   output            add_taking_op_o,
   output reg        add_rdy_o,        // ready
   input             rnd_taking_add_i,
@@ -66,14 +66,14 @@ module pfpu_marocchino_addsub
   input      [52:0] fract53b_i,
   // 'a'/'b' related
   input             exec_op_fp64_arith_i,
-  input             opc_0_i,         // force intrmadiate result to 0
+  input             opc_0_i,         // force intermediate result to 0
   input             exp_eq_i,
   input             exp_gt_i,
   input             fract_eq_i,
   input             fract_gt_i,
   // outputs
   output reg        add_sign_o,      // signum
-  output reg        add_sub_0_o,     // flag that actual substruction is performed and result is zero
+  output reg        add_sub_0_o,     // flag that actual subtraction is performed and result is zero
   output reg        add_shr_o,       // do right shift in align stage
   output reg [12:0] add_exp13shr_o,  // exponent for right shift align
   output reg  [5:0] add_shl_o,       // do left shift in align stage
@@ -127,7 +127,7 @@ module pfpu_marocchino_addsub
   // 'a'/'b' related
   reg         s0o_op_fpxx_sub;
   reg         s0o_op_fp64_arith;
-  reg         s0o_opc_0;         // force intrmadiate result to 0
+  reg         s0o_opc_0;         // force intermediate result to 0
   reg         s0o_exp_eq;
   reg         s0o_exp_gt;
   reg         s0o_fract_eq;
@@ -178,7 +178,7 @@ module pfpu_marocchino_addsub
   end // @cpu-clock
 
 
-  /* Stage #1: pre addition / substraction align */
+  /* Stage #1: pre addition / subtraction align */
 
 
   // comparisons completion
@@ -338,7 +338,7 @@ module pfpu_marocchino_addsub
   reg [54:0] s2o_fract55_shr;
   reg [52:0] s2o_fract53_nsh;
   reg        s2o_op_sub;
-  reg        s2o_sub_0;       // actual operation is substruction and the result is zero
+  reg        s2o_sub_0;       // actual operation is subtraction and the result is zero
   reg        s2o_sticky;      // rounding support
   reg        s2o_op_fp64_arith;
   //  registering
@@ -380,7 +380,7 @@ module pfpu_marocchino_addsub
   reg        s3o_signc;
   reg [12:0] s3o_exp13c;
   reg [55:0] s3o_fract56_add;
-  reg        s3o_sub_0;       // actual operation is substruction and the result is zero
+  reg        s3o_sub_0;       // actual operation is subtraction and the result is zero
   reg        s3o_sticky;      // rounding support
   reg        s3o_op_fp64_arith;
   //  registering
@@ -506,7 +506,7 @@ module pfpu_marocchino_addsub
       add_sign_o      <= s3o_signc;
       add_sub_0_o     <= s3o_sub_0; // MAROCCHINO_TODO: optimize ?
       add_shr_o       <= s3o_fract56_add[55];
-      add_exp13shr_o  <= s3o_exp13c + 1'b1; // makes sence only if add-shr is rised
+      add_exp13shr_o  <= s3o_exp13c + 1'b1; // makes since only if add-shr is raised
       add_shl_o       <= s4t_shl;
       add_exp13shl_o  <= s4t_exp13shl;
       add_exp13sh0_o  <= s3o_exp13c;

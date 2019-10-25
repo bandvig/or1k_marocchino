@@ -125,7 +125,7 @@ module or1k_marocchino_immu
   wire                             tlb_reload_huge;
 
   // sxe: supervisor execute enable
-  // uxe: user exexute enable
+  // uxe: user execute enable
   reg                              sxe;
   reg                              uxe;
 
@@ -259,7 +259,7 @@ module or1k_marocchino_immu
   end // @ clock
 
 
-  // TAG virtual address (drived by IMMU's super-cache controller)
+  // TAG virtual address (driven by IMMU's super-cache controller)
   reg  [OPTION_OPERAND_WIDTH-1:0] virt_addr_tag_r;
 
 
@@ -583,7 +583,7 @@ module or1k_marocchino_immu
   endgenerate
 
 
-  // Extention to cache_inhibit
+  // Extension to cache_inhibit
   //   Work around IMMU just for symmetric with DMMU?
   wire cache_inhibit_limit_immu_off; // state: OFF
   wire cache_inhibit_limit_immu_uon; // state: UPDATE & DMMU is ON

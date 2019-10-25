@@ -93,7 +93,7 @@ module or1k_marocchino_rat_cell
     end // regular update
   end // at clock
 
-  // extention bits
+  // extension bits
   always @(posedge cpu_clk) begin
     if (padv_exec_i)
       rat_extadr_o <= set_rdx_alloc ? dcod_extadr_i : rat_extadr_o;

@@ -334,8 +334,8 @@
 `define OR1K_FPCSR_ALLF  `OR1K_FPCSR_DZF:`OR1K_FPCSR_OVF
 // FPCSR reset value
 `define OR1K_FPCSR_RESET_VALUE `OR1K_FPCSR_WIDTH'd0
-// FPCSR extention: maskable FPU flags.
-// -vvvv- uncomment the next line to switch the extention on -vvvv-
+// FPCSR extension: maskable FPU flags.
+// -vvvv- uncomment the next line to switch the extension on -vvvv-
 //`define OR1K_FPCSR_MASK_FLAGS
 // bits
 `define OR1K_FPCSR_MASK_OVF   12

@@ -10,7 +10,7 @@
 //    (c) Pseudo CDC disclaimer:                                      //
 //        As positive edges of wb-clock and cpu-clock assumed be      //
 //        aligned, we use simplest clock domain pseudo-synchronizers. //
-//    (d) Also atomic reservation implemeted here in Wishbone         //
+//    (d) Also atomic reservation implemented here in Wishbone        //
 //        clock domain                                                //
 //                                                                    //
 ////////////////////////////////////////////////////////////////////////
@@ -177,7 +177,7 @@ module or1k_marocchino_bus_if_wb32
   wire                       burst_keep;
   wire                [31:0] burst_next_adr;
 
-  // continue busrting
+  // continue bursting
   assign burst_proc = to_wbm_cti_r[1];
   assign burst_keep = burst_proc & (~burst_done_r[0]);
 
@@ -229,7 +229,7 @@ module or1k_marocchino_bus_if_wb32
   end // @wb-clock
 
 
-  // --- IBUS/DBUS bridges output assignenment ---
+  // --- IBUS/DBUS bridges output assignment ---
   assign wbm_adr_o = to_wbm_adr_r; // IBUS/DBUS bridges
   assign wbm_cti_o = to_wbm_cti_r; // IBUS/DBUS bridges
   assign wbm_bte_o = to_wbm_bte_r; // IBUS/DBUS bridges
@@ -370,7 +370,7 @@ module or1k_marocchino_bus_if_wb32
       to_wbm_dat_r <= cpu_dat_r1;   // DBUS bridge
     end // @wb-clock
 
-    // --- DBUS bridge output assignenment ---
+    // --- DBUS bridge output assignment ---
     assign wbm_stb_o = to_wbm_stb_r; // DBUS bridge
     assign wbm_cyc_o = to_wbm_cyc_r; // DBUS bridge
     assign wbm_we_o  = to_wbm_we_r;  // DBUS bridge
@@ -399,7 +399,7 @@ module or1k_marocchino_bus_if_wb32
       end
     end // @wb-clock
 
-    // --- IBUS bridge output assignenment ---
+    // --- IBUS bridge output assignment ---
     assign wbm_stb_o = to_wbm_stb_r;  // IBUS bridge
     assign wbm_cyc_o = to_wbm_cyc_r;  // IBUS bridge
     assign wbm_we_o  =  1'b0;         // IBUS bridge
@@ -574,7 +574,7 @@ module or1k_marocchino_bus_if_wb32
     always @(posedge cpu_clk) begin
       cpu_snoop_adr_r <= snoop_adr_r;
     end
-    // --- ports assignement ---
+    // --- ports assignment ---
     assign cpu_snoop_adr_o = cpu_snoop_adr_r; // DBUS multi core bridge
     assign cpu_snoop_en_o  = cpu_snoop_en_r;  // DBUS multi core bridge
 
@@ -583,12 +583,12 @@ module or1k_marocchino_bus_if_wb32
     // DCACHE Snoop ACK ->  DBUS Bridge
     // We implement the ACK here without routing in DCACHE because
     // it's timing guaranties that the chain:
-    //    DCAHCE Snoop ACK ->
+    //    DCACHE Snoop ACK ->
     //      Restoring DBUS request ->
-    //        DBUS Brige ACK ->
-    //          Provide DBUS Brige ACK to DCACHE
+    //        DBUS Bridge ACK ->
+    //          Provide DBUS Bridge ACK to DCACHE
     // completes even later than DCACHE Snoop invalidation even for
-    // fastest "DBUS Brige ACK" and ("CPU clock" == "Wishbone clock")
+    // fastest "DBUS Bridge ACK" and ("CPU clock" == "Wishbone clock")
     //
     // Pseudo CDC disclaimer:
     // As positive edges of wb-clock and cpu-clock assumed be aligned,
@@ -600,10 +600,10 @@ module or1k_marocchino_bus_if_wb32
     always @(posedge cpu_clk) begin
       if (cpu_rst)
         dc_snoop_inv_ack_toggle_r <= 1'b0;
-      else if (cpu_snoop_en_o)              // Toggle DCAHCE Snoop ACK
+      else if (cpu_snoop_en_o)              // Toggle DCACHE Snoop ACK
         dc_snoop_inv_ack_toggle_r <= ~dc_snoop_inv_ack_toggle_r;
     end
-    // --- DCAHCE Snoop ACK pulse (eq. to others CPU side signals) ---
+    // --- DCACHE Snoop ACK pulse (eq. to others CPU side signals) ---
     reg    cpu_snoop_inv_ack_r1, cpu_snoop_inv_ack_r2;
     assign cpu_snoop_inv_ack = cpu_snoop_inv_ack_r1 ^ cpu_snoop_inv_ack_r2;
     // ---
@@ -633,7 +633,7 @@ module or1k_marocchino_bus_if_wb32
   endgenerate
 
   // Atomic reservation flag and address are placed in
-  // Wishbown clock domain to exclude possible misalign
+  // Wishbone clock domain to exclude possible misalign
   // during crossing propagations:
   //  (a) snoop hits from Wishbone to CPU
   //  (b) l.swa from CPU to Wishbone
@@ -677,7 +677,7 @@ module or1k_marocchino_bus_if_wb32
     end // @cpu-clock
     // ---
     // no re-fill for l.swa (see LSU and DCACHE),
-    // so needn't taking into accaunt bursting here
+    // so needn't taking into account bursting here
     reg  flush_r;
     // ---
     always @(posedge wb_clk) begin
@@ -732,7 +732,7 @@ module or1k_marocchino_bus_if_wb32
         to_cpu_atomic_flg_r1 <= atomic_flg_r;
     end // at cpu-clock
 
-    // output assignement
+    // output assignment
     assign cpu_atomic_flg_o = to_cpu_atomic_flg_r1; // DBUS bridge
 
   end // atomic_support

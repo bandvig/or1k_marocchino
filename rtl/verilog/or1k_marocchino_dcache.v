@@ -54,7 +54,7 @@ module or1k_marocchino_dcache
   input                                 dbus_err_i,
 
   // Regular operation
-  //  # addresses and "DCHACHE inhibit" flag
+  //  # addresses and "DCACHE inhibit" flag
   input      [OPTION_OPERAND_WIDTH-1:0] virt_addr_idx_i,
   input      [OPTION_OPERAND_WIDTH-1:0] virt_addr_s1o_i,
   input      [OPTION_OPERAND_WIDTH-1:0] virt_addr_s2o_i,
@@ -202,7 +202,7 @@ module or1k_marocchino_dcache
 
 
   // Snoop-Invalidation interface to TAG-RAM
-  // Snoop-Hit flag (1-clok length)
+  // Snoop-Hit flag (1-clk length)
   wire s2o_snoop_hit;
   // Each ways information in the tag memory
   wire   [TAGMEM_WAY_WIDTH-1:0] inv_snoop_dout_way [OPTION_DCACHE_WAYS-1:0];
@@ -247,7 +247,7 @@ module or1k_marocchino_dcache
   assign dc_hit = |dc_hit_way;
 
 
-  // Is the area cachable?
+  // Is the area cacheable?
   wire   is_cacheble     = dc_enable_i & (~dmmu_cache_inhibit_i);
 
   // for write processing
@@ -258,7 +258,7 @@ module or1k_marocchino_dcache
   assign dc_ack_read_o   = s1o_op_lsu_load_i  & (~s1o_op_lsu_atomic_i) & is_cacheble &   dc_hit;
   reg    s2o_dc_ack_read;
 
-  // re-fill reqest
+  // re-fill request
   assign dc_refill_req_o = s1o_op_lsu_load_i  & (~s1o_op_lsu_atomic_i) & is_cacheble & (~dc_hit);
 
   // DBUS access request
@@ -324,7 +324,7 @@ module or1k_marocchino_dcache
    * DCACHE FSM controls
    */
 
-  // Cancel operation by pipe flusing or an address related exception
+  // Cancel operation by pipe flushing or an address related exception
   // !!! (or1k_marocchino_lsu.dc_store_cancel == dc_cancel) !!!
   wire dc_cancel = s2o_excepts_addr_i | pipeline_flush_i;
 
@@ -383,7 +383,7 @@ module or1k_marocchino_dcache
         DC_INV_BY_MTSPR: begin
           // next state
           dc_state <= (s2o_snoop_hit ? DC_INV_BY_SNOOP : DC_SPR_ACK); // invalidate by l.mtspr
-          // rize SPR BUS ACK any case
+          // raise SPR BUS ACK any case
           spr_bus_ack_o <= 1'b1; // invalidate by l.mtspr
         end
 
@@ -501,10 +501,10 @@ module or1k_marocchino_dcache
     (* parallel_case *)
     case (dc_state)
       DC_CHECK: begin // re-fill address register
-        if (s2o_snoop_hit)      // set re-fill address register to invaldate by snoop-hit
-          virt_addr_rfl_r <= s2o_snoop_adr;   // invaldate by snoop-hit
-        else if (spr_dc_cs)     // set re-fill address register to invaldate by l.mtspr
-          virt_addr_rfl_r <= spr_bus_dat_r;   // invaldate by l.mtspr
+        if (s2o_snoop_hit)      // set re-fill address register to invalidate by snoop-hit
+          virt_addr_rfl_r <= s2o_snoop_adr;   // invalidate by snoop-hit
+        else if (spr_dc_cs)     // set re-fill address register to invalidate by l.mtspr
+          virt_addr_rfl_r <= spr_bus_dat_r;   // invalidate by l.mtspr
         else if (lsu_s2_adv_i)  // set re-fill address register to initial re-fill address
           virt_addr_rfl_r <= virt_addr_s1o_i; // prepare to re-fill (copy of LSU::s2o_virt_addr)
       end // check
@@ -641,9 +641,9 @@ module or1k_marocchino_dcache
       DC_INV_BY_MTSPR: begin
         //
         // Lazy invalidation, invalidate everything that matches tag address
-        //  # Pay attention we needn't to take into accaunt exceptions or
-        //    pipe flusing here. It because, MARROCCHINO executes
-        //    l.mf(t)spr commands after successfull completion of
+        //  # Pay attention we needn't to take into account exceptions or
+        //    pipe flushing here. It because, MAROCCHINO executes
+        //    l.mf(t)spr commands after successful completion of
         //    all previous instructions.
         //
         for (w2 = 0; w2 < OPTION_DCACHE_WAYS; w2 = w2 + 1) begin
@@ -656,10 +656,10 @@ module or1k_marocchino_dcache
       DC_INV_BY_ATOMIC: begin
         //
         // With the simplest approach we just force linked
-        // address to be not cachable.
+        // address to be not cacheable.
         // The address is also declared as freshest by LRU calculator
         // that delays re-filling of it.
-        // MAROCCHINO_TODO: more accurate processing if linked address is cachable.
+        // MAROCCHINO_TODO: more accurate processing if linked address is cacheable.
         //
         for (w2 = 0; w2 < OPTION_DCACHE_WAYS; w2 = w2 + 1) begin
           if (s2o_hit_way[w2])                          // on invalidate by lwa/swa
@@ -792,26 +792,26 @@ module or1k_marocchino_dcache
   // TAG-RAM instance
   or1k_dpram_en_w1st
   #(
-    .ADDR_WIDTH     (OPTION_DCACHE_SET_WIDTH), // DCAHCE_TAG_RAM
-    .DATA_WIDTH     (TAGMEM_WIDTH), // DCAHCE_TAG_RAM
-    .CLEAR_ON_INIT  (OPTION_DCACHE_CLEAR_ON_INIT) // DCAHCE_TAG_RAM
+    .ADDR_WIDTH     (OPTION_DCACHE_SET_WIDTH), // DCACHE_TAG_RAM
+    .DATA_WIDTH     (TAGMEM_WIDTH), // DCACHE_TAG_RAM
+    .CLEAR_ON_INIT  (OPTION_DCACHE_CLEAR_ON_INIT) // DCACHE_TAG_RAM
   )
   dc_tag_ram
   (
     // port "a": Read / Write (for RW-conflict case)
-    .clk_a          (cpu_clk), // DCAHCE_TAG_RAM
-    .en_a           (tag_rwp_en), // DCAHCE_TAG_RAM
-    .we_a           (tag_rwp_we), // DCAHCE_TAG_RAM
-    .addr_a         (tag_rindex), // DCAHCE_TAG_RAM
-    .din_a          (tag_din), // DCAHCE_TAG_RAM
-    .dout_a         (tag_dout), // DCAHCE_TAG_RAM
+    .clk_a          (cpu_clk), // DCACHE_TAG_RAM
+    .en_a           (tag_rwp_en), // DCACHE_TAG_RAM
+    .we_a           (tag_rwp_we), // DCACHE_TAG_RAM
+    .addr_a         (tag_rindex), // DCACHE_TAG_RAM
+    .din_a          (tag_din), // DCACHE_TAG_RAM
+    .dout_a         (tag_dout), // DCACHE_TAG_RAM
     // port "b": Write if no RW-conflict
-    .clk_b          (cpu_clk), // DCAHCE_TAG_RAM
-    .en_b           (tag_wp_en), // DCAHCE_TAG_RAM
-    .we_b           (1'b1), // DCAHCE_TAG_RAM
-    .addr_b         (tag_windex), // DCAHCE_TAG_RAM
-    .din_b          (tag_din), // DCAHCE_TAG_RAM
-    .dout_b         () // DCAHCE_TAG_RAM
+    .clk_b          (cpu_clk), // DCACHE_TAG_RAM
+    .en_b           (tag_wp_en), // DCACHE_TAG_RAM
+    .we_b           (1'b1), // DCACHE_TAG_RAM
+    .addr_b         (tag_windex), // DCACHE_TAG_RAM
+    .din_b          (tag_din), // DCACHE_TAG_RAM
+    .dout_b         () // DCACHE_TAG_RAM
   );
 
 
@@ -852,7 +852,7 @@ module or1k_marocchino_dcache
     // Whether the way hits
     wire [OPTION_DCACHE_WAYS-1:0] s2t_snoop_hit_way;
 
-    // Shoop-Hit per way
+    // Snoop-Hit per way
     for (sw1=0; sw1<OPTION_DCACHE_WAYS; sw1=sw1+1) begin : gen_snoop_per_way_hit
       // split by ways
       assign s2t_snoop_dout_way[sw1] = s2t_snoop_dout[(sw1+1)*TAGMEM_WAY_WIDTH-1:sw1*TAGMEM_WAY_WIDTH];
@@ -897,10 +897,10 @@ module or1k_marocchino_dcache
       assign inv_snoop_hit_way[sw1]  = s3o_snoop_hit_way[sw1];
     end
 
-    // Snoop-Hit flag (1-clok length)
+    // Snoop-Hit flag (1-clk length)
     wire   s2t_snoop_hit   = (|s2t_snoop_hit_way);
     reg    s2o_snoop_hit_r;
-    assign s2o_snoop_hit   = s2o_snoop_hit_r; // SNOOP-EANBLED
+    assign s2o_snoop_hit   = s2o_snoop_hit_r; // SNOOP-ENABLED
     // ---
     always @(posedge cpu_clk) begin
       if (cpu_rst)
@@ -911,7 +911,7 @@ module or1k_marocchino_dcache
 
     // Do Snoop-Invalidation flag (lock LSU)
     reg    s2o_snoop_proc_r;
-    assign s2o_snoop_proc_o = s2o_snoop_proc_r; // SNOOP-EANBLED
+    assign s2o_snoop_proc_o = s2o_snoop_proc_r; // SNOOP-ENABLED
     // ---
     always @(posedge cpu_clk) begin
       if (cpu_rst)
@@ -989,18 +989,18 @@ module or1k_marocchino_dcache
 
     genvar sw2;
 
-    assign s2o_snoop_hit = 1'b0; // SNOOP-DISANBLED
-    assign s2o_snoop_proc_o = 1'b0; // SNOOP-DISANBLED
+    assign s2o_snoop_hit = 1'b0; // SNOOP-DISABLED
+    assign s2o_snoop_proc_o = 1'b0; // SNOOP-DISABLED
 
     for (sw2=0; sw2<OPTION_DCACHE_WAYS; sw2=sw2+1) begin : zero_inv_snoop_data
-      assign inv_snoop_dout_way[sw2] = {TAGMEM_WAY_WIDTH{1'b0}};  // SNOOP-DISANBLED
-      assign inv_snoop_hit_way[sw2]  = 1'b0;                      // SNOOP-DISANBLED
+      assign inv_snoop_dout_way[sw2] = {TAGMEM_WAY_WIDTH{1'b0}};  // SNOOP-DISABLED
+      assign inv_snoop_hit_way[sw2]  = 1'b0;                      // SNOOP-DISABLED
     end
 
-    assign s2o_snoop_adr = {OPTION_OPERAND_WIDTH{1'b0}}; // SNOOP-DISANBLED
+    assign s2o_snoop_adr = {OPTION_OPERAND_WIDTH{1'b0}}; // SNOOP-DISABLED
 
     // Drop write-hit if it is snooped
-    assign inv_snoop_dc_ack_write = 1'b0; // SNOOP-DISANBLED
+    assign inv_snoop_dc_ack_write = 1'b0; // SNOOP-DISABLED
 
   end
   endgenerate

@@ -5,7 +5,7 @@
 //  Description: [O]rder [MAN]ager unit                            //
 //    a) collect various state signals from DECODE                 //
 //       and EXECUTE modules                                       //
-//    b) analisys of conflicts                                     //
+//    b) analysis of conflicts                                     //
 //    c) generate valid flags for advance DECODE and Write-Back    //
 //                                                                 //
 /////////////////////////////////////////////////////////////////////
@@ -154,7 +154,7 @@ module or1k_marocchino_oman
   //  # target for l.jr / l.jalr
   input      [OPTION_OPERAND_WIDTH-1:0] dcod_rfb1_jr_i,
   input      [OPTION_OPERAND_WIDTH-1:0] wrbk_result1_i,
-  // comparision flag for l.bf/l.bnf
+  // comparison flag for l.bf/l.bnf
   input                                 ctrl_flag_sr_i,
   // jump/branch signals to IFETCH
   output                                do_branch_o,
@@ -176,7 +176,7 @@ module or1k_marocchino_oman
   output reg [OPTION_OPERAND_WIDTH-1:0] wrbk_jb_target_o,
 
 
-  //   Flag to enabel/disable exterlal interrupts processing
+  //   Flag to enable/disable external interrupts processing
   // depending on the fact is instructions restartable or not
   output                                exec_interrupts_en_o,
 
@@ -244,7 +244,7 @@ module or1k_marocchino_oman
   localparam  OCBTC_OP_FPXX_ARITH_POS  = OCBTC_OP_MUL_POS         + 1; // arithmetic part only
   localparam  OCBTC_OP_FPXX_CMP_POS    = OCBTC_OP_FPXX_ARITH_POS  + 1; // granting write back to fpxx comparison
   localparam  OCBTC_OP_LS_POS          = OCBTC_OP_FPXX_CMP_POS    + 1; // load / store
-  // we also reset extention bits because zero value is meaningfull
+  // we also reset extension bits because zero value is meaningful
   localparam  OCBTC_EXTADR_LSB         = OCBTC_OP_LS_POS          + 1;
   localparam  OCBTC_EXTADR_MSB         = OCBTC_OP_LS_POS          + DEST_EXTADR_WIDTH;
   // value of MSB of order control buffer tap
@@ -304,7 +304,7 @@ module or1k_marocchino_oman
   assign dcod_extadr_o = dcod_extadr_r;
 
 
-  // Flag that istruction is restrartable.
+  // Flag that instruction is restrartable.
   // Instructions which are not restartable:
   //     "store" - they are buffered and couldn't be removed from buffer
   //               till execution completion
@@ -324,7 +324,7 @@ module or1k_marocchino_oman
 
 
   // Compute OCBs depth
-  localparam INSN_OCB_NUM_TAPS    = EXTADR_MAX - 1; // extention bits "0" is reserved as "not used"
+  localparam INSN_OCB_NUM_TAPS    = EXTADR_MAX - 1; // extension bits "0" is reserved as "not used"
   localparam JB_ATTR_OCB_NUM_TAPS = (INSN_OCB_NUM_TAPS >> 1) + 1;
 
 
@@ -354,7 +354,7 @@ module or1k_marocchino_oman
       dcod_rfd1_we_i, // OCB-Attributes entrance
       dcod_delay_slot_i, // OCB-Attributes entrance
       dcod_op_rfe_i, // OCB-Attributes entrance
-      // Flag that istruction is restartable
+      // Flag that instruction is restartable
       interrupts_en, // OCB-Attributes entrance
       // Combined IFETCH/DECODE an exception flag
       dcod_an_except_fd_i, // OCB-Attributes entrance
@@ -415,9 +415,9 @@ module or1k_marocchino_oman
   // We needn't Write-Back-to-DECODE hazards for FLAG and CARRY:
   //  (a) we process FLAG for l.bf/.bnf in separate way
   //  (b) only 1-clock instructions request FLAG/CARRY,
-  //      however any case they granted with Write-Back accees after completion FLAG/CARRY update
+  //      however any case they granted with Write-Back access after completion FLAG/CARRY update
 
-  // Extention bits visible at EXECUTE output
+  // Extension bits visible at EXECUTE output
   wire [(DEST_EXTADR_WIDTH-1):0] exec_extadr = ocbo[OCBTC_EXTADR_MSB:OCBTC_EXTADR_LSB];
 
   // RAT outputs
@@ -429,7 +429,7 @@ module or1k_marocchino_oman
   generate
   genvar ic;
   for (ic = 0; ic < NUM_GPRS; ic = ic + 1) begin : rat_cell_k
-    // RAT cells instansence
+    // RAT cells instances
     or1k_marocchino_rat_cell
     #(
       .OPTION_RF_ADDR_WIDTH   (OPTION_RF_ADDR_WIDTH), // RAT-CELL
@@ -487,10 +487,10 @@ module or1k_marocchino_oman
 
 
   //   An execute module is ready and granted access to Write-Back
-  //   Instructions l.mf(t)spr have got guaranted Write-Back access because
+  //   Instructions l.mf(t)spr have got guaranteed Write-Back access because
   // no any new instruction is issued into execution till
   // l.mf(t)spr has been completed. Pay attention that we start
-  // l.mf(t)spr ecxecution after completion of all peviously
+  // l.mf(t)spr execution after completion of all previously
   // issued instructions only.
   //   l.rfe and FETCH/DECODE exceptions are also should
   // push Write-Back latches
@@ -498,7 +498,7 @@ module or1k_marocchino_oman
   wire   op_1clk_valid_l = op_1clk_valid_i & ocbo[OCBTC_OP_1CLK_POS];
   // ---
   //   Declaration valid flag for jump/branch attributes
-  //   For l.jal/l.jalr we use adder in 1-clk to compure return address,
+  //   For l.jal/l.jalr we use adder in 1-clk to compute return address,
   // so for the cases we additionally wait "jump/branch attributes".
   wire   exec_jb_attr_valid;
   // ---
@@ -517,7 +517,7 @@ module or1k_marocchino_oman
   // Taking Jump by Register FSM //
   //-----------------------------//
 
-  // --- various pendings till rB/flag computationcompletion ---
+  // --- various pendings till rB/flag computation completion ---
   wire                            jr_dcd2fth_hazard_d1b1_raw; // used only inside J/B FSM
   wire    [DEST_EXTADR_WIDTH-1:0] jr_hazard_ext_raw;
   reg     [DEST_EXTADR_WIDTH-1:0] jb_hazard_ext_p;
@@ -528,9 +528,9 @@ module or1k_marocchino_oman
   assign jr_hazard_ext_raw = rat_extadr[fetch_rfb1_adr_i];
 
   localparam [3:0] JR_FSM_CATCHING_JR = 4'b0001, // on IFETCH output
-                   JR_FSM_GET_B1      = 4'b0010, // get rB for l.jr/ljalr if no hazard
-                   JR_FSM_WAITING_B1  = 4'b0100, // waiting rB for l.jr/ljalr if hazard
-                   JR_FSM_DOING_JR    = 4'b1000; // execute l.jr/ljalr
+                   JR_FSM_GET_B1      = 4'b0010, // get rB for l.jr/jalr if no hazard
+                   JR_FSM_WAITING_B1  = 4'b0100, // waiting rB for l.jr/jalr if hazard
+                   JR_FSM_DOING_JR    = 4'b1000; // execute l.jr/jalr
 
   reg [3:0] jr_fsm_state_r;
 
@@ -594,7 +594,7 @@ module or1k_marocchino_oman
   localparam [4:0] BC_FSM_CATCHING_BC           = 5'b00001, // on IFETCH output
                    BC_FSM_DO_INSTANT_BRANCH     = 5'b00010,
                    BC_FSM_PREDICT_CATCHING_DS   = 5'b00100, // from conditional branch till delay slot
-                   BC_FSM_PREDICT_WAITING_FLAG  = 5'b01000, // from delay slot till periction reslolving
+                   BC_FSM_PREDICT_WAITING_FLAG  = 5'b01000, // from delay slot till prediction resolved
                    BC_FSM_PREDICT_MISS          = 5'b10000; // restart IFETCH from mispredict target (1-clock)
 
   reg [4:0] bc_fsm_state_r;
@@ -634,7 +634,7 @@ module or1k_marocchino_oman
       flag_alloc_ext_r <= flag_alloc_ext_m;
   end // at cpu-clock
 
-  // --- use / do  preticted or instant conditional branch (bc) ---
+  // --- use / do  predicted or instant conditional branch (bc) ---
   wire fetch_op_bc = fetch_op_bf_i | fetch_op_bnf_i;
   reg  dcod_op_bc_r; // to WriteBack
   reg  dcod_op_bf_r; // to WriteBack
@@ -644,7 +644,7 @@ module or1k_marocchino_oman
   reg  predict_bc_taken_r;
   reg  predict_flag_value_r;
   reg  predict_flag_alloc_r;
-  // --- wait completion writting to SR[F] ---
+  // --- wait completion writing to SR[F] ---
   wire keep_predict_flag_alloc = predict_flag_alloc_r & (jb_hazard_ext_p != wrbk_extadr_o);
   // --- compute raw hit/miss for prediction ---
   // --- they are used only inside J/B FSM ---
@@ -734,7 +734,7 @@ module or1k_marocchino_oman
   end // @cpu-clock
 
 
-  // address extention for J/B processing
+  // address extension for J/B processing
   always @(posedge cpu_clk) begin
     if (padv_dcod_i) begin
       if (jr_fsm_catching_jr & fetch_op_jr_i)
@@ -859,7 +859,7 @@ module or1k_marocchino_oman
       // --- control flags ---
       1'b1, // JB ATTR-C VALID
       (jr_fsm_doing_jr_state & (|jr_target_p[1:0])), // JB ATTR-C IBUS ALIGN
-      (jr_fsm_doing_jr_state | dcod_op_jimm_r), // JB ATTR-C JUMP (uncoditional)
+      (jr_fsm_doing_jr_state | dcod_op_jimm_r), // JB ATTR-C JUMP (unconditional)
       dcod_op_bf_r, // JB ATTR-C BRANCH BY FLAG (conditional)
       // --- data ---
       (jr_fsm_doing_jr_state ? jr_target_p : dcod_to_imm_target_r) // JB ATTR-D TARGET
@@ -868,7 +868,7 @@ module or1k_marocchino_oman
   // --- JB-ATTR-OCB instance ---
   or1k_marocchino_ff_oreg_buff
   #(
-    .NUM_TAPS         (JB_ATTR_OCB_NUM_TAPS), // JB-ATTR-OCB: extention bits "0" is reserved as "not used"
+    .NUM_TAPS         (JB_ATTR_OCB_NUM_TAPS), // JB-ATTR-OCB: extension bits "0" is reserved as "not used"
     .DATA_WIDTH       (JB_ATTR_WIDTH), // JB-ATTR-OCB
     .FULL_FLAG        ("NONE"), // JB-ATTR-OCB
     .EMPTY_FLAG       ("NONE") // JB-ATTR-OCB
@@ -983,7 +983,7 @@ module or1k_marocchino_oman
 
 
 
-  //   Flag to enabel/disable exterlal interrupts processing
+  //   Flag to enable/disable external interrupts processing
   // depending on the fact is instructions restartable or not
   assign exec_interrupts_en_o     = ocbo[OCBTA_INTERRUPTS_EN_POS];
 
@@ -1001,10 +1001,10 @@ module or1k_marocchino_oman
   assign exec_except_syscall_o    = ocbo[1];
   assign exec_except_trap_o       = ocbo[0];
 
-  // PC at EXECUTE (moslty for debugging)
+  // PC at EXECUTE (mostly for debugging)
   wire [OPTION_OPERAND_WIDTH-1:0] pc_exec = ocbo[OCBTA_PC_MSB:OCBTA_PC_LSB];
 
-  // instuction requests write-back
+  // instruction requests write-back
   wire exec_rfd1_we = ocbo[OCBTA_RFD1_WRBK_POS];
   wire exec_rfd2_we = ocbo[OCBTA_RFD2_WRBK_POS];
 
@@ -1057,8 +1057,8 @@ module or1k_marocchino_oman
   end // @clock
 
 
-  // extention bits: valid for 1-clock
-  // to reolve hazards in rezervation stations
+  // extension bits: valid for 1-clock
+  // to resolve hazards in reservation stations
   always @(posedge cpu_clk) begin
     if (padv_wrbk_i)
       wrbk_extadr_o <= exec_extadr;
