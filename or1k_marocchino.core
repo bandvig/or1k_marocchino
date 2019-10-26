@@ -78,8 +78,8 @@ targets:
 
   synth:
     default_tool : icestorm
-    filesets : [core]
+    filesets : [core, fpu_marocchino]
     tools:
       icestorm:
         pnr: none
-    toplevel : or1k_marocchino
+    toplevel : or1k_marocchino_top
