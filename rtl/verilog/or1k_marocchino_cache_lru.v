@@ -168,7 +168,7 @@ module or1k_marocchino_cache_lru
   // Create age relation matrix
   integer i2, j2, off2;
   // Upper half of the matrix is updated history.
-  // Lower half of the matrix is just opposit to upper one.
+  // Lower half of the matrix is just opposite to upper one.
   always @(update) begin: agematrix
     off2 = 0;
     for (i2 = 0; i2 < NUMWAYS; i2 = i2 + 1) begin

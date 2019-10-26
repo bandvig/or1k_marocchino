@@ -44,7 +44,7 @@ module pfpu_marocchino_muldiv
   // clocks and resets
   input             cpu_clk,
   // pipe controls
-  input             pipeline_flush_i,   // flushe pipe
+  input             pipeline_flush_i,   // flush pipe
   input             mul_start_i,
   input             div_start_i,
   output            muldiv_taking_op_o,
@@ -62,7 +62,7 @@ module pfpu_marocchino_muldiv
   input      [52:0] fract53b_i,
   // 'a'/'b' related
   input             exec_op_fp64_arith_i,
-  input             dbz_i,           // devision by zero detection
+  input             dbz_i,           // division by zero detection
   input             opc_0_i,         // force intermediate results to zero
   // MUL outputs
   output            mul_sign_o,      // signum
@@ -421,7 +421,7 @@ module pfpu_marocchino_muldiv
 
 
   // right shift value
-  // and appropriatelly corrected exponent
+  // and appropriately corrected exponent
   wire s1o_exp13c_0              = ~(|s1o_exp13c);
   wire [12:0] s2t_shr_of_neg_exp = (~s1o_exp13c) + 13'd2; // (8192-v+1) and truncate to 13bits
   // variants:

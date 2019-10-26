@@ -10,9 +10,9 @@
 //        CPU clock domain                                            //
 //    (d) Actually, CDC is not implemented completely yet.            //
 //        The CPU clock could be greater or equal to Wishbone one,    //
-//        buth them must be aligned. So, synchronizers consist of     //
+//        but they must be aligned. So, synchronizers consist of      //
 //        single latch named "*_r2". To implement full synchronizers  //
-//        latches *_r1 shuld be appropriatelly added.                 //
+//        latches *_r1 should be appropriately added.                 //
 //                                                                    //
 ////////////////////////////////////////////////////////////////////////
 //                                                                    //

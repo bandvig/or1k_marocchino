@@ -221,17 +221,17 @@ module pfpu_marocchino_cmp
               s1o_exp_eq,    s1o_exp_gt,    exp_lt,
             s1o_fract_eq,  s1o_fract_gt,  fract_lt,
                                           all_zero})
-      12'b0_11_00_???_???_?: {blta, altb, aeqb} = 3'b001; // both op INF comparisson
+      12'b0_11_00_???_???_?: {blta, altb, aeqb} = 3'b001; // both op INF comparison
       12'b0_11_01_???_???_?: {blta, altb, aeqb} = 3'b100;
       12'b0_11_10_???_???_?: {blta, altb, aeqb} = 3'b010;
       12'b0_11_11_???_???_?: {blta, altb, aeqb} = 3'b001;
 
-      12'b0_10_00_???_???_?: {blta, altb, aeqb} = 3'b100; // opa_i INF comparisson
+      12'b0_10_00_???_???_?: {blta, altb, aeqb} = 3'b100; // opa_i INF comparison
       12'b0_10_01_???_???_?: {blta, altb, aeqb} = 3'b100;
       12'b0_10_10_???_???_?: {blta, altb, aeqb} = 3'b010;
       12'b0_10_11_???_???_?: {blta, altb, aeqb} = 3'b010;
 
-      12'b0_01_00_???_???_?: {blta, altb, aeqb} = 3'b010; // opb_i INF comparisson
+      12'b0_01_00_???_???_?: {blta, altb, aeqb} = 3'b010; // opb_i INF comparison
       12'b0_01_01_???_???_?: {blta, altb, aeqb} = 3'b100;
       12'b0_01_10_???_???_?: {blta, altb, aeqb} = 3'b010;
       12'b0_01_11_???_???_?: {blta, altb, aeqb} = 3'b100;
@@ -292,7 +292,7 @@ module pfpu_marocchino_cmp
   ////////////////////////////////////////////////////////////////////////
   // Just before latching
 
-  //  # set/slear commands
+  //  # set/clear commands
   wire s2t_fpxx_flag_set   =  cmp_flag;
   wire s2t_fpxx_flag_clear = ~cmp_flag;
   //  # FP32 comparison flags

@@ -52,7 +52,7 @@ module pfpu_marocchino_i2f
   // operand for conversion
   input      [63:0] opa_i,
   input             exec_op_fp64_arith_i,
-  // ouputs for rounding
+  // outputs for rounding
   output reg        i2f_sign_o,
   output reg  [3:0] i2f_shr_o,
   output reg [10:0] i2f_exp11shr_o,

@@ -62,7 +62,7 @@ module pfpu_marocchino_rnd
   // input from add/sub
   input        add_rdy_i,       // add/sub is ready
   input        add_sign_i,      // add/sub signum
-  input        add_sub_0_i,     // flag that actual substruction is performed and result is zero
+  input        add_sub_0_i,     // flag that actual subtraction is performed and result is zero
   input        add_shr_i,       // do right shift in align stage
   input [12:0] add_exp13shr_i,  // exponent for right shift align
   input  [5:0] add_shl_i,       // do left shift in align stage
@@ -455,7 +455,7 @@ module pfpu_marocchino_rnd
                     (rm_to_infp_i & (~s1o_sign) & s2t_lost) |
                     (rm_to_infm_i &   s1o_sign  & s2t_lost);
 
-  // IEEE compliance rounding for qutient
+  // IEEE compliance rounding for quotient
   wire s2t_div_rnd_up = (rm_nearest_i & s2t_r & s2t_s) |
                         (rm_to_infp_i & (~s1o_sign) & s2t_s) |
                         (rm_to_infm_i &   s1o_sign  & s2t_s);
@@ -554,7 +554,7 @@ module pfpu_marocchino_rnd
 
   // F2I complete conversion to two's complement
   //  # left aligned
-  //  # maximum signed value if overflaw
+  //  # maximum signed value if overflow
   wire [63:0] s3t_ixx_opc = s2o_int64_rnd + {63'd0,s2o_f2i_sign};
   // zero flag
   wire s3t_ixx_00 = (~s2o_f2i_inv) & (~(|s2o_fract64_rnd));
