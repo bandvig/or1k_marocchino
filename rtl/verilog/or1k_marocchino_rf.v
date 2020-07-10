@@ -27,7 +27,7 @@
 `include "or1k_defines.v"
 
 /****************************************************/
-/* Regiter File with Shadow GPRs and SPR BUS access */
+/* Register File with Shadow GPRs and SPR BUS access */
 /****************************************************/
 
 module or1k_marocchino_rf
@@ -263,7 +263,7 @@ module or1k_marocchino_rf
     end // @ clock
 
 
-    // registered output data: valid for 1-clock only with rised ACK
+    // registered output data: valid for 1-clock only with raised ACK
     wire [(RF_DW-1):0] rfS_dout;
     // ---
     always @(posedge cpu_clk) begin
@@ -397,7 +397,7 @@ module or1k_marocchino_rf
       end
     end // @ clock
 
-    // registered output data: valid for 1-clock only with rised ACK
+    // registered output data: valid for 1-clock only with raised ACK
     always @(posedge cpu_clk) begin
       spr_bus_dat_gpr0_r <= spr_gpr0_data & {RF_DW{spr_gpr0_read_mx_state}};
     end
@@ -433,7 +433,7 @@ module or1k_marocchino_rf
   // Forwarding Conditions //
   //-----------------------//
 
-  // Note: actually we perdorm D2->Ax/Bx writting
+  // Note: actually we perform D2->Ax/Bx writing
   //       when DECODE, EXECUTE & WRITE-BACK are stalled.
   //       That means D2-related WriteBack-to-Fetch hazards
   //       are not possible. And D2-related WriteBack-to-Decode
@@ -732,7 +732,7 @@ module or1k_marocchino_rf
 
   // Special case for l.jr/l.jalr
   //   (a) By default these instructions require B1 operand,
-  //       so we implemented simlified path here
+  //       so we implemented simplified path here
   //   (b) The output is used next clock to DECODE to form
   //       registered l.jr/l.jalr command
   //   (c) IFETCH generates bubbles till B1 completion

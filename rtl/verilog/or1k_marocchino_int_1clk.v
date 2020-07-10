@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////////////
 //                                                                    //
-//  Integer Operatins computed for 1 clock                            //
+//  Integer Operations computed within 1 clock                        //
 //                                                                    //
 //  Derived from mor1kx_execute_alu                                   //
 //                                                                    //
@@ -53,7 +53,7 @@ module or1k_marocchino_int_1clk
 
   // any 1-clock sub-unit
   input                                 exec_op_1clk_i,
-  // Reqired flag or carry
+  // Required flag or carry
   input                                 exec_flag_carry_req_i,
   // adder's inputs
   input                                 exec_op_add_i,
@@ -124,7 +124,7 @@ module or1k_marocchino_int_1clk
 
 
   //------------------//
-  // Adder/subtractor //
+  // Adder/subtracter //
   //------------------//
   // outputs
   wire             adder_carryout;
@@ -267,7 +267,7 @@ module or1k_marocchino_int_1clk
 
 
   //----------------------------------------//
-  // Sign/Zero exentions for 8- and 16-bits //
+  // Sign/Zero exensions for 8- and 16-bits //
   //----------------------------------------//
   reg [EXEDW-1:0] extsz_result;
   // ---
@@ -417,7 +417,7 @@ module or1k_marocchino_int_1clk
   wire   mux_except_overflow_1clk    = except_overflow_enable_i & (wrbk_1clk_miss_r ? u_1clk_overflow_set_p : u_1clk_overflow_set);
   assign exec_except_overflow_1clk_o = grant_wrbk_to_1clk_i & mux_except_overflow_1clk;
 
-  // Write-Back-latchers
+  // Write-Back-latches
   always @(posedge cpu_clk) begin
     if (padv_wrbk_i & grant_wrbk_to_1clk_i) begin
       //  # update carry flag by 1clk-operation

@@ -56,7 +56,7 @@ module or1k_marocchino_decode
   input                                 fetch_an_except_i,
   //  # instruction is in delay slot
   input                                 fetch_delay_slot_i,
-  //  # instruction word itsef
+  //  # instruction word itself
   input          [`OR1K_INSN_WIDTH-1:0] fetch_insn_i,
   //  # operands addresses
   input      [OPTION_RF_ADDR_WIDTH-1:0] fetch_rfa1_adr_i,
@@ -87,10 +87,10 @@ module or1k_marocchino_decode
 
   // destiny D1
   output reg [OPTION_RF_ADDR_WIDTH-1:0] dcod_rfd1_adr_o, // address of Write-Back
-  output reg                            dcod_rfd1_we_o,  // instruction performes Write-Back to D1
+  output reg                            dcod_rfd1_we_o,  // instruction performs Write-Back to D1
   // destiny D2 (for FPU64)
   output reg [OPTION_RF_ADDR_WIDTH-1:0] dcod_rfd2_adr_o, // D2 address
-  output reg                            dcod_rfd2_we_o, // instruction performes Write-Back to D2
+  output reg                            dcod_rfd2_we_o, // instruction performs Write-Back to D2
 
   // instruction PC
   input      [OPTION_OPERAND_WIDTH-1:0] pc_fetch_i,
@@ -120,7 +120,7 @@ module or1k_marocchino_decode
 
   // 1-clock instruction
   output reg                            dcod_op_1clk_o,
-  // Reqired flag or carry
+  // Required flag or carry
   output reg                            dcod_flag_carry_req_o,
   // Adder related
   output reg                            dcod_op_add_o,
@@ -267,7 +267,7 @@ module or1k_marocchino_decode
                     (opc_insn == `OR1K_OPCODE_SFIMM);
 
 
-  // jumps with link to 1-CLCK reservaton station for save GR[9]
+  // jumps with link to 1-CLCK reservation station for save GR[9]
   wire op_jal = (opc_insn == `OR1K_OPCODE_JALR) | (opc_insn == `OR1K_OPCODE_JAL);
 
 
@@ -356,7 +356,7 @@ module or1k_marocchino_decode
   // fpu arithmetic opc:
   // ===================
   // 000 = add
-  // 001 = substract
+  // 001 = subtract
   // 010 = multiply
   // 011 = divide
   // 100 = i2f
@@ -405,7 +405,7 @@ module or1k_marocchino_decode
   wire [`OR1K_IMM_WIDTH-1:0] opc_imm16 = fetch_insn_i[`OR1K_IMM_SELECT];
 
   //   Instructions with sign-extended immediate
-  // excluding load/store, because LSU performs this extention by itself.
+  // excluding load/store, because LSU performs this extension by itself.
   assign imm_sext     = {{16{opc_imm16[15]}}, opc_imm16};
   assign imm_sext_sel = (opc_insn == `OR1K_OPCODE_ADDI)  |
                         (opc_insn == `OR1K_OPCODE_ADDIC) |
@@ -414,7 +414,7 @@ module or1k_marocchino_decode
                         (opc_insn == `OR1K_OPCODE_SFIMM);
 
   //   Instructions with zero-extended immediate
-  // excluding MT(F)SPR, because CTRL performs this extention by itself.
+  // excluding MT(F)SPR, because CTRL performs this extension by itself.
   assign imm_zext     = {16'd0, opc_imm16};
   assign imm_zext_sel = (opc_insn == `OR1K_OPCODE_ORI)  |
                         (opc_insn == `OR1K_OPCODE_ANDI) |
@@ -637,7 +637,7 @@ module or1k_marocchino_decode
         begin
           (* parallel_case *)
           case (opc_alu)
-            `OR1K_ALU_OPC_EXTBH, // rD <- zero/sign extention (rA) for 8- and 16- bits
+            `OR1K_ALU_OPC_EXTBH, // rD <- zero/sign extension (rA) for 8- and 16- bits
             `OR1K_ALU_OPC_EXTW,  // rD <- rA for 32-bits
             `OR1K_ALU_OPC_FFL1:  // rD <- FFL1(rA)
               begin
@@ -797,7 +797,7 @@ module or1k_marocchino_decode
       dcod_op_mXspr_o     <= 1'b0;
       dcod_op_push_exec_o <= 1'b0;
       dcod_op_push_wrbk_o <= 1'b0;
-      // for correct tracking data dependacy
+      // for correct tracking data dependency
       dcod_rfd1_we_o      <= 1'b0;
       dcod_rfd2_we_o      <= 1'b0;
       dcod_flag_we_o      <= 1'b0;
@@ -811,7 +811,7 @@ module or1k_marocchino_decode
       dcod_op_mXspr_o     <= op_mfspr | op_mtspr;
       dcod_op_push_exec_o <= an_except_fd | op_nop | op_rfe | op_jb_push_exec;
       dcod_op_push_wrbk_o <= an_except_fd | op_nop | op_rfe | op_msync;
-      // for correct tracking data dependacy
+      // for correct tracking data dependency
       dcod_rfd1_we_o      <= attr_rfd1_we;
       dcod_rfd2_we_o      <= op_fpxx_arith & op_fp64bit;
       dcod_flag_we_o      <= op_setflag | op_fpxx_cmp | (opc_insn == `OR1K_OPCODE_SWA);
@@ -825,7 +825,7 @@ module or1k_marocchino_decode
       dcod_op_mXspr_o     <= 1'b0;
       dcod_op_push_exec_o <= 1'b0;
       dcod_op_push_wrbk_o <= 1'b0;
-      // for correct tracking data dependacy
+      // for correct tracking data dependency
       dcod_rfd1_we_o      <= 1'b0;
       dcod_rfd2_we_o      <= 1'b0;
       dcod_flag_we_o      <= 1'b0;
@@ -851,7 +851,7 @@ module or1k_marocchino_decode
       dcod_lsu_length_o         <= lsu_length;
       dcod_lsu_zext_o           <= lsu_zext;
       dcod_op_msync_o           <= op_msync;
-      // Reqired flag or carry
+      // Required flag or carry
       dcod_flag_carry_req_o     <= op_cmov | adder_do_carry;
       // Adder related
       dcod_op_add_o             <= op_add;

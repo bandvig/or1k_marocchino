@@ -37,7 +37,7 @@ module ocb_tap
   input      [DATA_SIZE-1:0] prev_tap_out_i,
   input      [DATA_SIZE-1:0] forwarded_value_i,
   input                      use_forwarded_value_i,
-  // data ouputs
+  // data outputs
   output reg [DATA_SIZE-1:0] out_o
 );
 
@@ -55,8 +55,8 @@ endmodule // ocb_tap
 
 //---------------------------------------------------------------//
 // Order Control Buffer                                          //
-//   all outputs could be analized simultaneously for example to //
-//   detect data dependancy                                      //
+//   all outputs could be analyzed simultaneously for example to //
+//   detect data dependency                                      //
 //---------------------------------------------------------------//
 /*
 module or1k_marocchino_ocb
@@ -433,7 +433,7 @@ module or1k_marocchino_oreg_buff
   localparam NUM_RAM_TAPS = NUM_TAPS - 1;
 
   // Compute RAM address width (the approach avoids clog2 call)
-  // (averall (with output register) taps number must be from 2 to 32)
+  // (overall (with output register) taps number must be from 2 to 32)
   localparam RAM_AW = (NUM_RAM_TAPS > 16) ? 5 :
                       (NUM_RAM_TAPS >  8) ? 4 :
                       (NUM_RAM_TAPS >  4) ? 3 :
@@ -477,7 +477,7 @@ module or1k_marocchino_oreg_buff
   reg  [RAM_AW-1:0] rtk_addr_m;
   reg               rwp_en_m;
   reg               rwp_we_m;
-  // Write only port contlols
+  // Write only port controls
   reg  [RAM_AW-1:0] wop_addr_m;
   reg               wop_en_m;
   // cell to read is empty / full
@@ -681,7 +681,7 @@ module or1k_marocchino_ff_oreg_buff
   localparam NUM_RAM_TAPS = NUM_TAPS - 1;
 
   // Compute RAM address width (the approach avoids clog2 call)
-  // (averall (with output register) taps number must be from 2 to 32)
+  // (overall (with output register) taps number must be from 2 to 32)
   localparam RAM_AW = (NUM_RAM_TAPS > 16) ? 5 :
                       (NUM_RAM_TAPS >  8) ? 4 :
                       (NUM_RAM_TAPS >  4) ? 3 :
@@ -728,7 +728,7 @@ module or1k_marocchino_ff_oreg_buff
   reg  [RAM_AW-1:0] rtk_addr_m;
   reg               rwp_en_m;
   reg               rwp_we_m;
-  // Write only port contlols
+  // Write only port controls
   reg  [RAM_AW-1:0] wop_addr_m;
   reg               wop_en_m;
   // cell to read is empty / full
@@ -863,7 +863,7 @@ module or1k_marocchino_ff_oreg_buff
   );
 
 
-  // output regiser controls (combinatorial)
+  // output register controls (combinatorial)
   reg                   oreg_rdy_m;
   reg  [DATA_WIDTH-1:0] data_m;
 
@@ -925,9 +925,9 @@ endmodule // or1k_marocchino_ff_oreg_buff
 //    Order Control Buffer (RAM + REG) with "MISS" detection       //
 //-----------------------------------------------------------------//
 //   If input data is invalid (is_miss_i == 1'b1) the OCB goes to  //
-// continously polling mode. It stays in the mode till resolving   //
+// continuously polling mode. It stays in the mode till resolving   //
 // data "miss" i.e. till latching valid data.                      //
-//   The module implemented separetaly from major OCB to avoid     //
+//   The module implemented separately from major OCB to avoid     //
 // extra complexity in source code.                                //
 //-----------------------------------------------------------------//
 /*

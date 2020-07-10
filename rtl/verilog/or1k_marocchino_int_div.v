@@ -81,7 +81,7 @@ module or1k_marocchino_int_div
   reg       div_s3_rdy_r;
   reg       div_valid_r;
 
-  //  ## dvisor is busy
+  //  ## divisor is busy
   wire   div_s3_busy = div_proc_r | (div_s3_rdy_r & wrbk_div_miss_r);
   //  ## start division
   assign idiv_taking_op_o = exec_op_div_i & (~div_s3_busy);

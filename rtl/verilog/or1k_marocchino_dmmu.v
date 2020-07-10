@@ -34,7 +34,7 @@ module or1k_marocchino_dmmu
   parameter OPTION_DMMU_CLEAR_ON_INIT   =  0
 )
 (
-  // clocks and resest
+  // clocks and reset
   input                                 cpu_clk,
   input                                 cpu_rst,
 
@@ -48,7 +48,7 @@ module or1k_marocchino_dmmu
   input                                 dmmu_enable_i,
   input                                 supervisor_mode_i,
 
-  // commnads
+  // commands
   input                                 s1o_op_lsu_store_i,
   input                                 s1o_op_lsu_load_i,
   input                                 s1o_op_msync_i,
@@ -366,7 +366,7 @@ module or1k_marocchino_dmmu
     end
 
     /*
-    // local declaratirons
+    // local declarations
     reg                            tlb_reload_req_r; // HW reload
     reg [OPTION_OPERAND_WIDTH-1:0] tlb_reload_addr_r; // HW reload
     reg                            tlb_reload_pagefault_r; // HW reload
@@ -586,9 +586,9 @@ module or1k_marocchino_dmmu
   end
   endgenerate
 
-  // Extention to cache_inhibit
+  // Extension to cache_inhibit
   //   Work around DMMU?
-  //   Addresses 0x8******* are treated as non-cacheble
+  //   Addresses 0x8******* are treated as non-cacheable
   //   regardless of DMMU's flag.
   wire cache_inhibit_limit_dmmu_off; // state: OFF
   wire cache_inhibit_limit_dmmu_uon; // state: UPDATE & DMMU is ON
@@ -635,7 +635,7 @@ module or1k_marocchino_dmmu
   // ---
   reg [VIRT_ADDR_HIT_MSB:0] virt_addr_hit_r;
 
-  // registered physsical address
+  // registered physical address
   reg [OPTION_OPERAND_WIDTH-1:0] phys_addr_r;
 
   // check if DMMU's cache miss

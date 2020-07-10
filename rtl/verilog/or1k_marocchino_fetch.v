@@ -116,14 +116,14 @@ module or1k_marocchino_fetch
   output                                fetch_valid_o,
   //  # instruction is in delay slot
   output                                fetch_delay_slot_o,
-  //  # instruction word itsef
+  //  # instruction word itself
   output         [`OR1K_INSN_WIDTH-1:0] fetch_insn_o,
   //  # operand addresses
   output     [OPTION_RF_ADDR_WIDTH-1:0] fetch_rfa1_adr_o,
   output     [OPTION_RF_ADDR_WIDTH-1:0] fetch_rfb1_adr_o,
   output     [OPTION_RF_ADDR_WIDTH-1:0] fetch_rfa2_adr_o,
   output     [OPTION_RF_ADDR_WIDTH-1:0] fetch_rfb2_adr_o,
-  //  # destinaton addresses
+  //  # destination addresses
   output     [OPTION_RF_ADDR_WIDTH-1:0] fetch_rfd1_adr_o,
   output     [OPTION_RF_ADDR_WIDTH-1:0] fetch_rfd2_adr_o,
 
@@ -172,7 +172,7 @@ module or1k_marocchino_fetch
 
   //--- ICACHE related controls and signals ---
 
-  // Not cacheble area -> IBUS access request
+  // Not cacheable area -> IBUS access request
   wire                            s2t_ibus_read_req;
   reg                             s2o_ibus_read_req;
   // ICACHE ack
@@ -199,7 +199,7 @@ module or1k_marocchino_fetch
   /**** Stage #3 Pending buffer ****/
   wire s3t_imem_hit;       // insn is valid, no exceptions
   wire s3t_imem_or_except; // either insn or an exception
-  wire s3t_miss_or_except; // for stahe #2 output insn mux
+  wire s3t_miss_or_except; // for stage #2 output insn mux
 
   reg                             fetch_full_r;
   reg                             s3o_fetch_an_except;  // any kind of exception
@@ -240,9 +240,9 @@ module or1k_marocchino_fetch
 
   /**** IFETCH pipe controls ****/
 
-  // Common conditions to advanse stages #1 and #2
-  wire s12_en   = (~s2o_ic_refill_req)   & (~s2o_ibus_read_req) & // enable advansing stagess #1 and #2
-                  (~s2o_fetch_an_except) & (~fetch_full_r);       // enable advansing stagess #1 and #2
+  // Common conditions to advance stages #1 and #2
+  wire s12_en   = (~s2o_ic_refill_req)   & (~s2o_ibus_read_req) & // enable advancing stages #1 and #2
+                  (~s2o_fetch_an_except) & (~fetch_full_r);       // enable advancing stages #1 and #2
 
   // Advance stage #1
   wire padv_s1  = padv_fetch_i & (~s1o_immu_upd) & s12_en;
@@ -665,9 +665,9 @@ module or1k_marocchino_fetch
 
   // instruction but no any exception
   assign s3t_imem_hit       =   s2o_imem_ack  & (~s2o_fetch_an_except);
-  // IFETCH output valid: istruction or exception
+  // IFETCH output valid: instruction or exception
   assign s3t_imem_or_except =   s2o_imem_ack  |   s2o_fetch_an_except;
-  // insrtuction word mux
+  // instruction word mux
   assign s3t_miss_or_except = (~s2o_imem_ack) |   s2o_fetch_an_except;
   // ---
   wire [`OR1K_INSN_WIDTH-1:0] s3t_fetch_insn;
@@ -676,7 +676,7 @@ module or1k_marocchino_fetch
 
 
   //-----------------------------------//
-  // Slobal set of saturation counters //
+  // Global set of saturation counters //
   //-----------------------------------//
 
   // --- stage #1 read current counter ---
@@ -703,7 +703,7 @@ module or1k_marocchino_fetch
       s1o_bc_cnt_radr <= s1t_bc_cnt_radr;
   end // at clock
 
-  // saturatin counter read address
+  // saturating counter read address
   wire [GSHARE_BITS_NUM-1:0] bc_cnt_radr;
   assign bc_cnt_radr = (padv_s1 ? s1t_bc_cnt_radr : s1o_bc_cnt_radr);
 

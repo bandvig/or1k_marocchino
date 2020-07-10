@@ -42,7 +42,7 @@
 // fpu operations:
 // ===================
 // 0000 = add
-// 0001 = substract
+// 0001 = subtract
 // 0010 = multiply
 // 0011 = divide
 // 0100 = i2f
@@ -308,17 +308,17 @@ u_pfpu_ocb
 );
 
 
-// Addition / Substruction
+// Addition / Subtraction
 //   connection wires
 wire        add_sign;      // add/sub signum
-wire        add_sub_0;     // flag that actual substruction is performed and result is zero
+wire        add_sub_0;     // flag that actual subtraction is performed and result is zero
 wire        add_shr;       // do right shift in align stage
 wire [12:0] add_exp13shr;  // exponent for right shift align
 wire  [5:0] add_shl;       // do left shift in align stage
 wire [12:0] add_exp13shl;  // exponent for left shift align
 wire [12:0] add_exp13sh0;  // exponent for no shift in align
 wire [56:0] add_fract57;   // fractional with appended {r,s} bits
-//   module istance
+//   module instance
 pfpu_marocchino_addsub u_pfpu_addsub
 (
   // clocks and resets
@@ -373,7 +373,7 @@ wire [12:0] div_exp13shl;  // exponent for left shift align
 wire [12:0] div_exp13sh0;  // exponent for no shift in align
 wire [56:0] div_fract57;   // fractional with appended {r,s} bits
 wire        div_dbz;        // div division by zero flag
-//   module istance
+//   module instance
 pfpu_marocchino_muldiv u_pfpu_muldiv
 (
   // clocks and resets
@@ -417,7 +417,7 @@ pfpu_marocchino_muldiv u_pfpu_muldiv
 );
 
 
-// convertors
+// converters
 //   i2f connection wires
 wire        i2f_sign;
 wire  [3:0] i2f_shr;
@@ -440,7 +440,7 @@ pfpu_marocchino_i2f u_pfpu_i2f
   // operand for conversion
   .opa_i                  (fp64_opa), // PFPU_I2F
   .exec_op_fp64_arith_i   (exec_op_fp64_arith_i), // PFPU_I2F
-  // ouputs for rounding
+  // outputs for rounding
   .i2f_sign_o             (i2f_sign), // PFPU_I2F
   .i2f_shr_o              (i2f_shr), // PFPU_I2F
   .i2f_exp11shr_o         (i2f_exp11shr), // PFPU_I2F

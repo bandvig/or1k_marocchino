@@ -68,7 +68,7 @@ module srt4_fract58
   // numerator and denominator
   input      [N-1:0] num_i,
   input      [N-1:0] den_i,
-  // double / sigle precision mode selector
+  // double / single precision mode selector
   input              s1o_op_fp64_arith_i,
   // outputs
   output reg         dbz_o,
@@ -86,7 +86,7 @@ module srt4_fract58
   wire zer = s1o_dbz_i | s1o_opc_0_i; // in SRT4(fractionals)
 
 
-  // Each iteration starts from qoutient digit selection
+  // Each iteration starts from quotient digit selection
   assign trunc_rem = prem_hi_r[N:N-3];
   // quotient's special digits
   reg [2:0] q_digit_2or3_r;
@@ -145,7 +145,7 @@ module srt4_fract58
 
   assign four_rem  = {prem_hi_r[N-2:0],2'd0};
   // next reminder
-  wire   sub  = ~q_digit[2]; // substract
+  wire   sub  = ~q_digit[2]; // subtract
   // sub ? (4*REM - MultDen) : (4*REM + MultDen)
   assign nrem = four_rem + (mult_den ^ {(N+1){sub}}) + {{N{1'b0}},sub};
 
@@ -157,7 +157,7 @@ module srt4_fract58
       prem_hi_r <= nrem;
   end // @clock
 
-  // signed digits to tow's complement on the fly convertor
+  // signed digits to tow's complement on the fly converter
   //  # part Q
   reg   [N-1:0] q_r;
   //  # ---
@@ -286,7 +286,7 @@ module pfpu_marocchino_div
   output reg [12:0] div_exp13shl_o,  // exponent for left align
   output reg [12:0] div_exp13sh0_o,  // exponent for no shift in align
   output reg [56:0] div_fract57_o,   // fractional with appended {r,s} bits
-  output reg        div_dbz_o        // divisin by zero
+  output reg        div_dbz_o        // division by zero
 );
 
   /*
@@ -335,8 +335,8 @@ module pfpu_marocchino_div
   wire [57:0] s3t_rem58;
   wire [57:0] s3t_qtnt58;
 
-  // we use right shifted numenator to guarantee
-  // (numenator < denominator) condition
+  // we use right shifted numerator to guarantee
+  // (numerator < denominator) condition
   srt4_fract58 u_srt4_fract
   (
     // clock and reset
@@ -353,7 +353,7 @@ module pfpu_marocchino_div
     // numerator and denominator
     .num_i                ({2'b0,s1o_fract53a_i,3'd0}), // SRT4-FRACT
     .den_i                ({s1o_fract53b_i,5'd0}), // SRT4-FRACT
-    // double / sigle precision mode selector
+    // double / single precision mode selector
     .s1o_op_fp64_arith_i  (s1o_op_fp64_arith_i), // SRT4-FRACT
     // outputs
     .dbz_o                (s2o_dbz), // SRT4-FRACT

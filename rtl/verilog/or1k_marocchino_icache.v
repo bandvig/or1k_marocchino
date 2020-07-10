@@ -198,7 +198,7 @@ module or1k_marocchino_icache
   assign hit = |hit_way;
 
 
-  // Is the area cachable?
+  // Is the area cacheable?
   wire   is_cacheble  = ic_enable_i & (~immu_cache_inhibit_i);
   // ICACHE ACK
   assign ic_ack_o     = is_cacheble &   hit;
@@ -273,7 +273,7 @@ module or1k_marocchino_icache
       case (ic_state)
         IC_READ: begin
           // to-re-fill or invalidate mean that neither
-          // exceptions nor flushing has occured
+          // exceptions nor flushing has occurred
           if (to_refill_i) begin            // FSM: read -> re-fill
             ic_refill_first_o <= 1'b1;      // FSM: read -> re-fill
             ic_state          <= IC_REFILL; // FSM: read -> re-fill
@@ -332,8 +332,8 @@ module or1k_marocchino_icache
     (* parallel_case *)
     case (ic_state)
       IC_READ: begin // re-fill address register
-        if (spr_ic_cs)        // set re-fill address register to invaldate by l.mtspr
-          virt_addr_rfl_r <= spr_bus_dat_r;   // invaldate by l.mtspr
+        if (spr_ic_cs)        // set re-fill address register to invalidate by l.mtspr
+          virt_addr_rfl_r <= spr_bus_dat_r;   // invalidate by l.mtspr
         else if (padv_s2_i) // set re-fill address register to initial re-fill address
           virt_addr_rfl_r <= virt_addr_s1o_i; // prepare to re-fill (copy of LSU::s2o_virt_addr)
       end // check
@@ -353,7 +353,7 @@ module or1k_marocchino_icache
                                                 virt_addr_mux_i[WAY_WIDTH-1:2]; // WAY READ INDEX at advance
 
   // Controls for read/write port.
-  // We activate RW-port writting during re-fill only.
+  // We activate RW-port writing during re-fill only.
   wire [OPTION_ICACHE_WAYS-1:0] way_rwp_en;
   wire [OPTION_ICACHE_WAYS-1:0] way_rwp_we;
   // ---
@@ -504,7 +504,7 @@ module or1k_marocchino_icache
           //  (a) In according with WISHBONE-B3 rule 3.45:
           // "SLAVE MUST NOT assert more than one of ACK, ERR or RTY"
           //  (b) We don't interrupt re-fill on flushing, so the only reason
-          // for invalidation is IBUS error occurence
+          // for invalidation is IBUS error occurrence
           //  (c) Lazy invalidation, invalidate everything that matches tag address
           for (w2 = 0; w2 < OPTION_ICACHE_WAYS; w2 = w2 + 1) begin
             tag_din_way[w2] = {TAGMEM_WAY_WIDTH{1'b0}}; // IBUS error at re-fill

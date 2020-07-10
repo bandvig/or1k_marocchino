@@ -1,6 +1,6 @@
 /////////////////////////////////////////////////////////////////////
 //                                                                 //
-//  Varios variants of Reservation Stations [RSRVS]                //
+//  Various variants of Reservation Stations [RSRVS]                //
 //                                                                 //
 //  Author: Andrey Bacherov                                        //
 //          avbacherov@opencores.org                               //
@@ -301,8 +301,8 @@ module or1k_marocchino_rsrvs
       end
     end
   end // @clock
-  //  # hazard resolution extention bits
-  //  # they make sence only with rized hazard flags
+  //  # hazard resolution extension bits
+  //  # they make sense only with raised hazard flags
   always @(posedge cpu_clk) begin
     if (padv_rsrvs_i) begin
       busy_extadr_dxa1_r <= omn2dec_hazards_addrs_i[EXTADR_DxA1_MSB:EXTADR_DxA1_LSB];
@@ -468,7 +468,7 @@ module or1k_marocchino_rsrvs
     else begin
       (* parallel_case *)
       case ({padv_exec_l, padv_rsrvs_i})
-        // EXEC registers are occuped
+        // EXEC registers are occupied
         2'b00, 2'b01:;
         // execution unit is taking insn
         2'b10: begin
@@ -522,7 +522,7 @@ module or1k_marocchino_rsrvs
   always @(posedge cpu_clk) begin
     (* parallel_case *)
     case ({padv_exec_l, padv_rsrvs_i})
-      // EXEC registers are occuped
+      // EXEC registers are occupied
       2'b00, 2'b01:;
       // execution unit is taking insn
       2'b10: begin
@@ -551,7 +551,7 @@ module or1k_marocchino_rsrvs
     always @(posedge cpu_clk) begin
       (* parallel_case *)
       case ({padv_exec_l, padv_rsrvs_i})
-        // EXEC registers are occuped
+        // EXEC registers are occupied
         2'b00, 2'b01:;
         // execution unit is taking insn
         2'b10: begin
@@ -613,7 +613,7 @@ module or1k_marocchino_rsrvs_1clk
   // OMAN-to-DECODE hazards
   //  # hazards flags: { d2b1, d1b1,  d2a1, d1a1 }
   input                               [3:0] omn2dec_hazards_flags_i,
-  //  # hasards addresses: { dxb1, dxa1 }
+  //  # hazards addresses: { dxb1, dxa1 }
   input       [((2*DEST_EXTADR_WIDTH)-1):0] omn2dec_hazards_addrs_i,
 
   // support in-1clk-unit forwarding
@@ -669,7 +669,7 @@ module or1k_marocchino_rsrvs_1clk
   wire padv_exec_l = (~exec_op_any_r) |  taking_op_i;
 
 
-  /**** Unpack Inputs and Preliminary Analisys for Hazards ****/
+  /**** Unpack Inputs and Preliminary Analysis for Hazards ****/
 
 
   // unpack operands: { rfb1, rfa1}
@@ -700,7 +700,7 @@ module or1k_marocchino_rsrvs_1clk
   wire omn2dec_hazard = omn2dec_hazard_d2b1 | omn2dec_hazard_d1b1 |
                         omn2dec_hazard_d2a1 | omn2dec_hazard_d1a1;
 
-  // propagate extention bits through RSRVS stages
+  // propagate extension bits through RSRVS stages
   wire   [(DEST_EXTADR_WIDTH-1):0] dcod_extadr;
   assign dcod_extadr = dcod_rfd1_we_i ? dcod_extadr_i : EXTADR_ZERO;
 
@@ -746,8 +746,8 @@ module or1k_marocchino_rsrvs_1clk
   //  ## unit-is-busy flag
   assign unit_free_o = (~busy_op_any_r);
 
-  //  # hazard resolution extention bits
-  //  # they make sence only with rized hazard flags
+  //  # hazard resolution extension bits
+  //  # they make since only with raised hazard flags
   always @(posedge cpu_clk) begin
     if (padv_rsrvs_i) begin
       busy_extadr_dxa1_r <= omn2dec_extadr_dxa1;
@@ -938,7 +938,7 @@ module or1k_marocchino_rsrvs_1clk
     else begin
       (* parallel_case *)
       case ({padv_exec_l, padv_rsrvs_i})
-        // EXEC registers are occuped
+        // EXEC registers are occupied
         2'b00, 2'b01:;
         // execution unit is taking insn
         2'b10: begin
@@ -1000,7 +1000,7 @@ module or1k_marocchino_rsrvs_1clk
   always @(posedge cpu_clk) begin
     (* parallel_case *)
     case ({padv_exec_l, padv_rsrvs_i})
-      // EXEC registers are occuped
+      // EXEC registers are occupied
       2'b00, 2'b01:;
       // execution unit is taking insn
       2'b10: begin
