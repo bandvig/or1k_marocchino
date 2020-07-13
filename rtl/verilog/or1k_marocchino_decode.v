@@ -130,8 +130,8 @@ module or1k_marocchino_decode
   output reg                            dcod_op_shift_o,
   output reg                      [3:0] dcod_opc_shift_o, // {SLL, SRL, SRA, ROR}
   // ffl1
-  output reg                            dcod_op_ffl1_o,
-  output reg                            dcod_opc_ffl1_o,
+  output reg                            dcod_op_fl1_o,
+  output reg                            dcod_op_ff1_o,
   // movhi, cmov
   output reg                            dcod_op_movhi_o,
   output reg                            dcod_op_cmov_o,
@@ -286,8 +286,7 @@ module or1k_marocchino_decode
                 op_jal; // we use adder for l.jl/l.jalr to compute return address: (pc+8)
   // Adder control logic
   // Subtract when comparing to check if equal
-  wire adder_do_sub = (op_alu & (opc_alu == `OR1K_ALU_OPC_SUB)) |
-                      op_setflag;
+  wire adder_do_sub = (op_alu & (opc_alu == `OR1K_ALU_OPC_SUB));
   // Generate carry-in select
   wire adder_do_carry = (op_alu & (opc_alu == `OR1K_ALU_OPC_ADDC)) |
                         (opc_insn == `OR1K_OPCODE_ADDIC);
@@ -314,8 +313,9 @@ module or1k_marocchino_decode
 
 
   // --- ffl1 ---
-  wire op_ffl1  = op_alu & (opc_alu  == `OR1K_ALU_OPC_FFL1);
-  wire opc_ffl1 = fetch_insn_i[8];
+  wire op_ffl1 = op_alu  & (opc_alu  == `OR1K_ALU_OPC_FFL1);
+  wire op_fl1  = op_ffl1 &   fetch_insn_i[8];
+  wire op_ff1  = op_ffl1 & (~fetch_insn_i[8]);
 
 
   // --- movhi / cmov ---
@@ -864,8 +864,8 @@ module or1k_marocchino_decode
                                     (opc_shift == `OR1K_ALU_OPC_SECONDARY_SHRT_SRA),
                                     (opc_shift == `OR1K_ALU_OPC_SECONDARY_SHRT_ROR)};
       // ffl
-      dcod_op_ffl1_o            <= op_ffl1;
-      dcod_opc_ffl1_o           <= opc_ffl1;
+      dcod_op_fl1_o             <= op_fl1;
+      dcod_op_ff1_o             <= op_ff1;
       // movhi, cmov
       dcod_op_movhi_o           <= op_movhi;
       dcod_op_cmov_o            <= op_cmov;

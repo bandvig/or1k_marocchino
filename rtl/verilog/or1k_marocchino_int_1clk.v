@@ -63,8 +63,8 @@ module or1k_marocchino_int_1clk
   input                                 exec_op_shift_i,
   input                           [3:0] exec_opc_shift_i,
   // ffl1
-  input                                 exec_op_ffl1_i,
-  input                                 exec_opc_ffl1_i,
+  input                                 exec_op_fl1_i,
+  input                                 exec_op_ff1_i,
   // movhi, cmov
   input                                 exec_op_movhi_i,
   input                                 exec_op_cmov_i,
@@ -126,38 +126,37 @@ module or1k_marocchino_int_1clk
   //------------------//
   // Adder/subtracter //
   //------------------//
+  wire [EXEDW-1:0] op_add = {EXEDW{exec_op_add_i}};
+  wire [EXEDW-1:0] add_a1 = op_add & exec_1clk_a1_m;
+  wire [EXEDW-1:0] add_b1 = op_add & exec_1clk_b1_m;
   // outputs
   wire             adder_carryout;
   wire [EXEDW-1:0] adder_result;
   // inputs
-  wire [EXEDW-1:0] b_mux = {EXEDW{exec_adder_do_sub_i}} ^ exec_1clk_b1_m; // inverse for l.sub
+  wire [EXEDW-1:0] b_mux = {EXEDW{exec_adder_do_sub_i}} ^ add_b1; // inverse for l.sub
   wire carry_in = exec_adder_do_sub_i | (exec_adder_do_carry_i & carry_i);
   // Adder
-  assign {adder_carryout, adder_result} =
-           exec_1clk_a1_m + b_mux + {{(EXEDW-1){1'b0}},carry_in};
+  assign {adder_carryout, adder_result} = add_a1 + b_mux + {{(EXEDW-1){1'b0}},carry_in};
   // result sign
   wire adder_result_sign = adder_result[EXEDW-1];
   // signed overflow detection
   // Input signs are same and result sign is different to input signs
-  wire adder_s_ovf =
-         (exec_1clk_a1_m[EXEDW-1] == b_mux[EXEDW-1]) &
-         (exec_1clk_a1_m[EXEDW-1] ^ adder_result[EXEDW-1]);
+  wire adder_s_ovf = (add_a1[EXEDW-1] == b_mux[EXEDW-1]) &
+                     (add_a1[EXEDW-1] ^ adder_result[EXEDW-1]);
   // unsigned overflow detection
   wire adder_u_ovf = adder_carryout;
 
 
-  //------//
-  // FFL1 //
-  //------//
-  // l.fl1
-  reg  [5:0] fl1_r;
-  reg  [5:0] ff1_r;
+  //-----//
+  // FL1 //
+  //-----//
+  wire [EXEDW-1:0] fl1_a1 = {EXEDW{exec_op_fl1_i}} & exec_1clk_a1_m;
+  reg        [5:0] fl1_r;
+  wire [EXEDW-1:0] fl1_result = {{(EXEDW-6){1'b0}}, fl1_r};
   // ---
-  wire [EXEDW-1:0] ffl1_result = {{(EXEDW-6){1'b0}}, (exec_opc_ffl1_i ? fl1_r : ff1_r)};
-  // ---
-  always @(exec_1clk_a1_m) begin
+  always @(fl1_a1) begin
     (* parallel_case *)
-    casez  (exec_1clk_a1_m)
+    casez  (fl1_a1)
       32'b1???????????????????????????????: fl1_r = 6'd32;
       32'b01??????????????????????????????: fl1_r = 6'd31;
       32'b001?????????????????????????????: fl1_r = 6'd30;
@@ -192,8 +191,19 @@ module or1k_marocchino_int_1clk
       32'b00000000000000000000000000000001: fl1_r = 6'd1;
       32'b00000000000000000000000000000000: fl1_r = 6'd0;
     endcase
+  end
+
+
+  //-----//
+  // FF1 //
+  //-----//
+  wire [EXEDW-1:0] ff1_a1 = {EXEDW{exec_op_ff1_i}} & exec_1clk_a1_m;
+  reg        [5:0] ff1_r;
+  wire [EXEDW-1:0] ff1_result = {{(EXEDW-6){1'b0}}, ff1_r};
+  // ---
+  always @(ff1_a1) begin
     (* parallel_case *)
-    casez  (exec_1clk_a1_m)
+    casez  (ff1_a1)
       32'b10000000000000000000000000000000: ff1_r = 6'd32;
       32'b?1000000000000000000000000000000: ff1_r = 6'd31;
       32'b??100000000000000000000000000000: ff1_r = 6'd30;
@@ -234,7 +244,6 @@ module or1k_marocchino_int_1clk
   //----------------//
   // Barrel shifter //
   //----------------//
-
   // Bit-reverse on left shift, perform right shift,
   // bit-reverse result on left shift.
 
@@ -248,13 +257,22 @@ module or1k_marocchino_int_1clk
   wire   [EXEDW-1:0] shift_msw;
   wire [EXEDW*2-1:0] shift_wide;
 
+  wire   [EXEDW-1:0] exec_op_shift;
+  wire   [EXEDW-1:0] shift_a1;
+  wire         [4:0] shift_b1;
+
   wire   [EXEDW-1:0] shift_result;
 
-  assign shift_lsw =  op_sll ? reverse(exec_1clk_a1_m) : exec_1clk_a1_m;
-  assign shift_msw =  op_sra ? {EXEDW{exec_1clk_a1_m[EXEDW-1]}} :
-                     (op_ror ? exec_1clk_a1_m : {EXEDW{1'b0}});
+  assign exec_op_shift = {EXEDW{exec_op_shift_i}};
 
-  assign shift_wide   = {shift_msw, shift_lsw} >> exec_1clk_b1_m[4:0];
+  assign shift_a1 = exec_op_shift & exec_1clk_a1_m;
+  assign shift_b1 = exec_op_shift[4:0] & exec_1clk_b1_m[4:0];
+
+  assign shift_lsw =  op_sll ? reverse(shift_a1) : shift_a1;
+  assign shift_msw =  op_sra ? {EXEDW{shift_a1[EXEDW-1]}} :
+                     (op_ror ? shift_a1 : {EXEDW{1'b0}});
+
+  assign shift_wide   = {shift_msw, shift_lsw} >> shift_b1;
   assign shift_right  = shift_wide[EXEDW-1:0];
   assign shift_result = op_sll ? reverse(shift_right) : shift_right;
 
@@ -262,28 +280,33 @@ module or1k_marocchino_int_1clk
   //------------------//
   // Conditional move //
   //------------------//
+  wire [EXEDW-1:0] exec_op_cmov = {EXEDW{exec_op_cmov_i}};
+  wire [EXEDW-1:0] cmov_a1      = exec_op_cmov & exec_1clk_a1_m;
+  wire [EXEDW-1:0] cmov_b1      = exec_op_cmov & exec_1clk_b1_m;
   wire [EXEDW-1:0] cmov_result;
-  assign cmov_result = flag_i ? exec_1clk_a1_m : exec_1clk_b1_m;
+  // ---
+  assign cmov_result = flag_i ? cmov_a1 : cmov_b1;
 
 
   //----------------------------------------//
   // Sign/Zero exensions for 8- and 16-bits //
   //----------------------------------------//
-  reg [EXEDW-1:0] extsz_result;
+  wire [EXEDW-1:0] extsz_a1 = {EXEDW{exec_op_extsz_i}} & exec_1clk_a1_m;
+  reg  [EXEDW-1:0] extsz_result;
   // ---
-  always @(exec_opc_extsz_i or exec_1clk_a1_m) begin
+  always @(exec_opc_extsz_i or extsz_a1) begin
     (* parallel_case *)
     case (exec_opc_extsz_i)
       {1'b0,`OR1K_ALU_OPC_SECONDARY_EXTBH_EXTBS}:
-        extsz_result = {{(EXEDW-8){exec_1clk_a1_m[7]}}, exec_1clk_a1_m[7:0]};
+        extsz_result = {{(EXEDW-8){extsz_a1[7]}}, extsz_a1[7:0]};
       {1'b0,`OR1K_ALU_OPC_SECONDARY_EXTBH_EXTBZ}:
-        extsz_result = {{(EXEDW-8){1'b0}}, exec_1clk_a1_m[7:0]};
+        extsz_result = {{(EXEDW-8){1'b0}}, extsz_a1[7:0]};
       {1'b0,`OR1K_ALU_OPC_SECONDARY_EXTBH_EXTHS}:
-        extsz_result = {{(EXEDW-16){exec_1clk_a1_m[15]}}, exec_1clk_a1_m[15:0]};
+        extsz_result = {{(EXEDW-16){extsz_a1[15]}}, extsz_a1[15:0]};
       {1'b0,`OR1K_ALU_OPC_SECONDARY_EXTBH_EXTHZ}:
-        extsz_result = {{(EXEDW-16){1'b0}}, exec_1clk_a1_m[15:0]};
+        extsz_result = {{(EXEDW-16){1'b0}}, extsz_a1[15:0]};
       default:
-        extsz_result = exec_1clk_a1_m;
+        extsz_result = extsz_a1;
     endcase
   end
 
@@ -291,27 +314,36 @@ module or1k_marocchino_int_1clk
   //--------------------//
   // Logical operations //
   //--------------------//
-  // Logic result
+  wire [EXEDW-1:0] exec_op_logic = {EXEDW{exec_op_logic_i}};
+  wire [EXEDW-1:0] logic_a1      = exec_op_logic & exec_1clk_a1_m;
+  wire [EXEDW-1:0] logic_b1      = exec_op_logic & exec_1clk_b1_m;
   reg  [EXEDW-1:0] logic_result;
   // Extract the result, bit-for-bit, from the look-up-table
   integer i;
-  always @(exec_lut_logic_i or exec_1clk_a1_m or exec_1clk_b1_m) begin
+  always @(exec_lut_logic_i or logic_a1 or logic_b1) begin
     for (i = 0; i < EXEDW; i=i+1) begin
-      logic_result[i] = exec_lut_logic_i[{exec_1clk_a1_m[i], exec_1clk_b1_m[i]}];
+      logic_result[i] = exec_lut_logic_i[{logic_a1[i], logic_b1[i]}];
     end
   end
+
+
+  //---------//
+  // l.movhi //
+  //---------//
+  wire [EXEDW-1:0] movhi_result = {EXEDW{exec_op_movhi_i}} & exec_1clk_b1_i;
 
 
   //------------------------------------------------------------------//
   // Muxing and registering 1-clk results and integer comparison flag //
   //------------------------------------------------------------------//
-  wire [EXEDW-1:0] u_1clk_result_mux = ({EXEDW{exec_op_shift_i}} & shift_result   ) |
-                                       ({EXEDW{exec_op_ffl1_i}}  & ffl1_result    ) |
-                                       ({EXEDW{exec_op_add_i}}   & adder_result   ) |
-                                       ({EXEDW{exec_op_logic_i}} & logic_result   ) |
-                                       ({EXEDW{exec_op_cmov_i}}  & cmov_result    ) |
-                                       ({EXEDW{exec_op_extsz_i}} & extsz_result   ) |
-                                       ({EXEDW{exec_op_movhi_i}} & exec_1clk_b1_m );
+  wire [EXEDW-1:0] u_1clk_result_mux = shift_result |
+                                       fl1_result   |
+                                       ff1_result   |
+                                       adder_result |
+                                       logic_result |
+                                       cmov_result  |
+                                       extsz_result |
+                                       movhi_result;
 
   //-------------------------------------//
   // update carry flag by 1clk-operation //
@@ -329,25 +361,42 @@ module or1k_marocchino_int_1clk
   //--------------------------//
   // Integer comparison logic //
   //--------------------------//
-  wire a_eq_b  = (adder_result == {EXEDW{1'b0}}); // Equal compare
-  wire a_lts_b = (adder_result_sign ^ adder_s_ovf); // Signed compare (sign != ovf)
-  wire a_ltu_b = ~adder_carryout; // Unsigned compare
+  // to prevent extra propagation SR[CY] we use separate adder
+  // for SR[F] computation
+  wire [EXEDW-1:0] sf_a1 =  exec_1clk_a1_m;
+  wire [EXEDW-1:0] sf_b1 = ~exec_1clk_b1_m;
+  wire [EXEDW-1:0] sf_d1;
+  wire             sf_sovf; // signed overflow
+  wire             sf_uovf; // unsigneg overflaw
+  // compute difference
+  assign {sf_uovf, sf_d1} = sf_a1 + sf_b1 + 1'b1;
+  // signed overflow
+  // input operands have same signs and result sign is different from them
+  assign sf_sovf = (sf_a1[EXEDW-1] == sf_b1[EXEDW-1]) & (sf_d1[EXEDW-1] ^ sf_b1[EXEDW-1]);
+  // equal
+  wire a_eq_b  = (sf_d1 == {EXEDW{1'b0}});
+  // signed compare
+  wire a_lts_b = (sf_d1[EXEDW-1] ^ sf_sovf); // (sign != ovf)
+  wire a_les_b = a_lts_b | a_eq_b;
+  // unsigned compare
+  wire a_ltu_b = ~sf_uovf;
+  wire a_leu_b = a_ltu_b | a_eq_b;
   // comb.
   reg flag_set;
-  always @(exec_opc_setflag_i or a_eq_b or a_lts_b or a_ltu_b) begin
+  always @(exec_opc_setflag_i or a_eq_b  or
+           a_lts_b or a_les_b or a_ltu_b or a_leu_b) begin
     (* parallel_case *)
-    case(exec_opc_setflag_i)
-      `OR1K_COMP_OPC_EQ:  flag_set = a_eq_b;
-      `OR1K_COMP_OPC_NE:  flag_set = ~a_eq_b;
-      `OR1K_COMP_OPC_GTU: flag_set = ~(a_eq_b | a_ltu_b);
-      `OR1K_COMP_OPC_GTS: flag_set = ~(a_eq_b | a_lts_b);
-      `OR1K_COMP_OPC_GEU: flag_set = ~a_ltu_b;
+    case (exec_opc_setflag_i)
+      `OR1K_COMP_OPC_LES: flag_set =  a_les_b;
+      `OR1K_COMP_OPC_LTS: flag_set =  a_lts_b;
       `OR1K_COMP_OPC_GES: flag_set = ~a_lts_b;
-      `OR1K_COMP_OPC_LTU: flag_set = a_ltu_b;
-      `OR1K_COMP_OPC_LTS: flag_set = a_lts_b;
-      `OR1K_COMP_OPC_LEU: flag_set = a_eq_b | a_ltu_b;
-      `OR1K_COMP_OPC_LES: flag_set = a_eq_b | a_lts_b;
-      default:            flag_set = 1'b0;
+      `OR1K_COMP_OPC_GTS: flag_set = ~a_les_b;
+      `OR1K_COMP_OPC_LEU: flag_set =  a_leu_b;
+      `OR1K_COMP_OPC_LTU: flag_set =  a_ltu_b;
+      `OR1K_COMP_OPC_GEU: flag_set = ~a_ltu_b;
+      `OR1K_COMP_OPC_GTU: flag_set = ~a_leu_b;
+      `OR1K_COMP_OPC_NE:  flag_set = ~a_eq_b;
+      default:            flag_set =  a_eq_b; // treated as for `OR1K_COMP_OPC_EQ
     endcase
   end
   // ---
