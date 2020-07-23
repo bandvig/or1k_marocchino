@@ -270,9 +270,8 @@ module pfpu_marocchino_div
   input             rnd_taking_div_i,
   // operands
   input             s1o_signc_i,
-  input      [12:0] s1o_exp13c_i,
-  input       [5:0] s2t_shrx_i,
-  input      [12:0] s2t_exp13rx_i,
+  input      [12:0] s2t_exp13c_i,
+  input      [10:0] s2t_shrx_i,
   input      [52:0] s1o_fract53a_i,
   input      [52:0] s1o_fract53b_i,
   input             s1o_opc_0_i,
@@ -280,10 +279,8 @@ module pfpu_marocchino_div
   input             s1o_op_fp64_arith_i,
   // MUL outputs
   output reg        div_sign_o,      // signum
-  output reg  [5:0] div_shr_o,       // do right shift in align stage
-  output reg [12:0] div_exp13shr_o,  // exponent for right shift align
+  output reg [10:0] div_shr_o,       // do right shift in align stage
   output reg        div_shl_o,       // do left shift in align stage
-  output reg [12:0] div_exp13shl_o,  // exponent for left align
   output reg [12:0] div_exp13sh0_o,  // exponent for no shift in align
   output reg [56:0] div_fract57_o,   // fractional with appended {r,s} bits
   output reg        div_dbz_o        // division by zero
@@ -311,11 +308,9 @@ module pfpu_marocchino_div
 
 
   // stage #2 outputs
-  reg        s2o_opc_0;
   reg        s2o_signc;
   reg [12:0] s2o_exp13c;
-  reg  [5:0] s2o_shrx;
-  reg [12:0] s2o_exp13rx;
+  reg [10:0] s2o_shrx;
   //   division by zero flag
   wire       s2o_dbz;
   //   double / single mode selector
@@ -323,11 +318,9 @@ module pfpu_marocchino_div
   //   registering
   always @(posedge cpu_clk) begin
     if (s2_adv) begin
-      s2o_opc_0         <= s1o_opc_0_i;
       s2o_signc         <= s1o_signc_i;
-      s2o_exp13c        <= s1o_exp13c_i;
-      s2o_shrx          <= s2t_shrx_i;
-      s2o_exp13rx       <= s2t_exp13rx_i;
+      s2o_exp13c        <= s2t_exp13c_i;
+      s2o_shrx          <= s1o_opc_0_i ? 11'd0 : s2t_shrx_i;
       s2o_op_fp64_arith <= s1o_op_fp64_arith_i;
     end // advance pipe
   end // @clock
@@ -379,26 +372,19 @@ module pfpu_marocchino_div
   //   and the result is non-zero
   //   the '1' is maximum number of leading zeros in the quotient.
   wire s3t_nlz = s2o_op_fp64_arith ? (~s3t_qtnt58[56]) : (~s3t_qtnt58[26]);
-  wire [12:0] s3t_exp13_m1 = s2o_exp13c - 13'd1;
   // left shift flag and corrected exponent
-  wire        s3t_shlx;
-  wire [12:0] s3t_exp13lx;
-  assign {s3t_shlx,s3t_exp13lx} =
-      // shift isn't needed (includes zero result)
-    (~s3t_nlz)            ? {1'b0,s2o_exp13c} :
-      // normalization is possible
-    (s2o_exp13c >  13'd1) ? {1'b1,s3t_exp13_m1} :
-      // denormalized and zero cases
-                            {1'b0,{12'd0,~s2o_opc_0}};
+  wire s3t_shlx  =
+        // shift isn't needed (includes zero result)
+        (~s3t_nlz)            ? 1'b0 :
+        // normalization is possible / denormalized and "forced zero" cases
+        (s2o_exp13c >  13'd1) ? 1'b1 : 1'b0;
 
   // output
   always @(posedge cpu_clk) begin
     if (out_adv) begin
       div_sign_o     <= s2o_signc;
       div_shr_o      <= s2o_shrx;
-      div_exp13shr_o <= s2o_exp13rx;
       div_shl_o      <= s3t_shlx;
-      div_exp13shl_o <= s3t_exp13lx;
       div_exp13sh0_o <= s2o_exp13c;
       div_fract57_o  <= s3t_qtnt57;
     end // advance pipe
