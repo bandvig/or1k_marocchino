@@ -36,19 +36,13 @@
 //  POSSIBILITY OF SUCH DAMAGE.                                     //
 //////////////////////////////////////////////////////////////////////
 
-`include "or1k_defines.v"
-
-
 //----------------------------------------------------------------------------//
-// SRT-4 kernel for 58-bits fractionals                                       //
-// Opposite to integer version it also:                                       //
-//  a) outputs reminder for correct sticky bit computation                    //
-//  b) doesn't need signum of quotient                                        //
-//  c) updated for double and single precision fractionals                    //
+// Radix-4 non-restoring division kernel with over-redundant quotient digits  //
+// set for 58-bits fractionals                                                //
 //     !!! DON'T CHANGE MODULE PARAMETERS !!!                                 //
 //----------------------------------------------------------------------------//
 
-module srt4_fract58
+module r4div_fract58
 #(
     parameter N      = 58, // must be even
     parameter LOG2N2 =  5  // ceil(log2(N/2)): size of iteration counter
@@ -63,8 +57,8 @@ module srt4_fract58
   output reg         div_valid_o,      // result ready
   input              wb_taking_div_i,  // Write Back is taking result
   // force zero result
-  input              s1o_opc_0_i, // SRT4(fractionals)
-  input              s1o_dbz_i, // SRT4(fractionals)
+  input              s1o_opc_0_i, // R4DIV(fractionals)
+  input              s1o_dbz_i, // R4DIV(fractionals)
   // numerator and denominator
   input      [N-1:0] num_i,
   input      [N-1:0] den_i,
@@ -76,48 +70,53 @@ module srt4_fract58
   output     [N-1:0] qtnt_o
 );
 
-  // Reminder
-  wire   [N:0] four_rem;   // 4*rem
-  wire   [N:0] nrem;       // next reminder (4*rem - q_digit*den)
-  reg    [N:0] prem_hi_r;  // partial reminder: initially = {0,num(2n-1)...num(n)}
-  wire   [3:0] trunc_rem;  // truncated partial reminder
-
   // force results to zero and skip iterations
-  wire zer = s1o_dbz_i | s1o_opc_0_i; // in SRT4(fractionals)
+  wire zer = s1o_dbz_i | s1o_opc_0_i; // in R4DIV(fractionals)
 
-
-  // Each iteration starts from quotient digit selection
-  assign trunc_rem = prem_hi_r[N:N-3];
-  // quotient's special digits
-  reg [2:0] q_digit_2or3_r;
-  reg [2:0] q_digit_minus_2or3_r;
+  // iterations controller
+  localparam [LOG2N2-1:0] DIV_COUNT_MAX_D = 5'd28; // double precision: (58/2) - 1
+  localparam [LOG2N2-1:0] DIV_COUNT_MAX_S = 5'd13; // single precision: (28/2) - 1
   // ---
+  reg [LOG2N2-1:0] div_count_r;
+  // division controller
   always @(posedge cpu_clk) begin
-    if (div_start_i) begin
-      q_digit_2or3_r       <= {2'b01, ~den_i[N-2]};
-      q_digit_minus_2or3_r <= { 1'b1,  den_i[N-2], ~den_i[N-2]};
+    if (pipeline_flush_i) begin
+      div_valid_o <= 1'b0;
+      dbz_o       <= 1'b0;
+      div_proc_o  <= 1'b0;
+      div_count_r <= {LOG2N2{1'b0}};
     end
-  end
-  // signed digit selection
-  reg [2:0] q_digit; // [2] - signum
-  // ---
-  always @(*) begin
-    (* parallel_case *)
-    casez (trunc_rem)
-      4'b0000: q_digit = 3'b000;
-      4'b0001: q_digit = 3'b001;
-      4'b0010: q_digit = 3'b010;
-      4'b0011: q_digit = q_digit_2or3_r;
-      4'b01??: q_digit = 3'b011; // 0100 ... 0111
-      4'b10??: q_digit = 3'b101; // 1000 ... 1011
-      4'b1100: q_digit = q_digit_minus_2or3_r;
-      4'b1101: q_digit = 3'b110;
-      4'b1110: q_digit = 3'b111;
-      default: q_digit = 3'b000;
-    endcase
-  end
+    else if (div_start_i) begin
+      if (zer) begin
+        div_valid_o <= 1'b1;
+        dbz_o       <= s1o_dbz_i; // in R4DIV(fractionals)
+        div_proc_o  <= 1'b0;
+        div_count_r <= {LOG2N2{1'b0}};
+      end
+      else begin
+        div_valid_o <= 1'b0;
+        dbz_o       <= 1'b0;
+        div_proc_o  <= 1'b1;
+        div_count_r <= s1o_op_fp64_arith_i ? DIV_COUNT_MAX_D : DIV_COUNT_MAX_S;
+      end
+    end
+    else if (wb_taking_div_i) begin
+      div_valid_o <= 1'b0;
+      dbz_o       <= 1'b0;
+      div_proc_o  <= 1'b0;
+      div_count_r <= {LOG2N2{1'b0}};
+    end
+    else if (div_proc_o) begin
+      if (~(|div_count_r)) begin // == 0
+        div_valid_o <= 1'b1;
+        div_proc_o  <= 1'b0;
+      end
+      else
+        div_count_r <= div_count_r + {LOG2N2{1'b1}}; // -= 1
+    end
+  end // @clock
 
-  // Prepare multiple versions of denominator
+  // latched multiples of denominator
   reg [N-1:0] one_den_r;    // 1 * denominator
   reg   [N:0] three_den_r;  // 3 * denominator
   // ---
@@ -127,23 +126,51 @@ module srt4_fract58
       three_den_r <= {1'b0, den_i} + {den_i, 1'b0};
     end
   end
-  // select the multiple denominator
-  reg [N:0] mult_den; // : 0 / den / 2*den / 3*den
-  // second operand selection
-  always @(*) begin
+
+  // reminder related
+  wire   [N:0] four_rem;   // 4*rem
+  wire   [N:0] nrem;       // next reminder (4*rem - q_digit*den)
+  reg    [N:0] prem_hi_r;  // partial reminder: initially = {0,num(2n-1)...num(n)}
+  wire   [3:0] trunc_rem;  // truncated partial reminder
+
+  // Each iteration starts from quotient digit selection
+  assign trunc_rem = prem_hi_r[N:N-3];
+
+  // signed digit selection, format: {sign[0:0], magn[1:0]}
+  reg  [2:0] q_digit;
+  // magnitude for digits depended on denominator
+  wire       lsb_magn_2or3 = ~one_den_r[N-2];
+  // {sign[0:0], magn[1:0]}
+  always @(trunc_rem or lsb_magn_2or3) begin
     (* parallel_case *)
-    case (q_digit)
-      3'b000:  mult_den = {(N+1){1'b0}};     // 0 * denominator
-      3'b001:  mult_den = {1'b0, one_den_r}; // 1 * denominator
-      3'b010:  mult_den = {one_den_r, 1'b0}; // 2 * denominator
-      3'b011:  mult_den = three_den_r;       // 3 * denominator
-      3'b101:  mult_den = three_den_r;       // 3 * denominator
-      3'b110:  mult_den = {one_den_r, 1'b0}; // 2 * denominator
-      default: mult_den = {1'b0, one_den_r}; // 1 * denominator
+    casez (trunc_rem)
+      4'b0000: q_digit = 3'b000; //  0
+      4'b0001: q_digit = 3'b001; //  1
+      4'b0010: q_digit = 3'b010; //  2
+      4'b0011: q_digit = {2'b01, lsb_magn_2or3}; // 2 or 3
+      4'b01??: q_digit = 3'b011; //  3 for 0100 ... 0111
+      4'b10??: q_digit = 3'b111; // -3 for 1000 ... 1011
+      4'b1100: q_digit = {2'b11, lsb_magn_2or3}; // -2 or -3
+      4'b1101: q_digit = 3'b110; // -2
+      4'b1110: q_digit = 3'b101; // -1
+      default: q_digit = 3'b000; //  0
     endcase
   end
 
-  assign four_rem  = {prem_hi_r[N-2:0],2'd0};
+  // select the multiple denominator
+  reg [N:0] mult_den; // : 0 / den / 2*den / 3*den
+  // second operand selection
+  always @(q_digit[1:0] or one_den_r or three_den_r) begin
+    (* parallel_case *)
+    case (q_digit[1:0])
+      2'b00: mult_den = {(N+1){1'b0}};     // 0 * denominator
+      2'b01: mult_den = {1'b0, one_den_r}; // 1 * denominator
+      2'b10: mult_den = {one_den_r, 1'b0}; // 2 * denominator
+      2'b11: mult_den = three_den_r;       // 3 * denominator
+    endcase
+  end
+
+  assign four_rem = {prem_hi_r[N-2:0],2'd0};
   // next reminder
   wire   sub  = ~q_digit[2]; // subtract
   // sub ? (4*REM - MultDen) : (4*REM + MultDen)
@@ -171,7 +198,7 @@ module srt4_fract58
         3'b001:  q_r <= { q_r[N-3:0],2'b01};
         3'b010:  q_r <= { q_r[N-3:0],2'b10};
         3'b011:  q_r <= { q_r[N-3:0],2'b11};
-        3'b101:  q_r <= {qm_r[N-3:0],2'b01};
+        3'b111:  q_r <= {qm_r[N-3:0],2'b01};
         3'b110:  q_r <= {qm_r[N-3:0],2'b10};
         default: q_r <= {qm_r[N-3:0],2'b11};
       endcase
@@ -190,7 +217,7 @@ module srt4_fract58
         3'b001:  qm_r <= { q_r[N-3:0],2'b00};
         3'b010:  qm_r <= { q_r[N-3:0],2'b01};
         3'b011:  qm_r <= { q_r[N-3:0],2'b10};
-        3'b101:  qm_r <= {qm_r[N-3:0],2'b00};
+        3'b111:  qm_r <= {qm_r[N-3:0],2'b00};
         3'b110:  qm_r <= {qm_r[N-3:0],2'b01};
         default: qm_r <= {qm_r[N-3:0],2'b10};
       endcase
@@ -205,52 +232,7 @@ module srt4_fract58
   // ---
   assign qtnt_o = q_r + {N{prem_hi_r[N]}};
 
-
-  // iterations controller
-  // ---
-  localparam [LOG2N2-1:0] DIV_COUNT_MAX_D = 5'd28; // double precision: (58/2) - 1
-  localparam [LOG2N2-1:0] DIV_COUNT_MAX_S = 5'd13; // single precision: (28/2) - 1
-  // ---
-  reg [LOG2N2-1:0] div_count_r;
-  // division controller
-  always @(posedge cpu_clk) begin
-    if (pipeline_flush_i) begin
-      div_valid_o <= 1'b0;
-      dbz_o       <= 1'b0;
-      div_proc_o  <= 1'b0;
-      div_count_r <= {LOG2N2{1'b0}};
-    end
-    else if (div_start_i) begin
-      if (zer) begin
-        div_valid_o <= 1'b1;
-        dbz_o       <= s1o_dbz_i; // in SRT4(fractionals)
-        div_proc_o  <= 1'b0;
-        div_count_r <= {LOG2N2{1'b0}};
-      end
-      else begin
-        div_valid_o <= 1'b0;
-        dbz_o       <= 1'b0;
-        div_proc_o  <= 1'b1;
-        div_count_r <= s1o_op_fp64_arith_i ? DIV_COUNT_MAX_D : DIV_COUNT_MAX_S;
-      end
-    end
-    else if (wb_taking_div_i) begin
-      div_valid_o <= 1'b0;
-      dbz_o       <= 1'b0;
-      div_proc_o  <= 1'b0;
-      div_count_r <= {LOG2N2{1'b0}};
-    end
-    else if (div_proc_o) begin
-      if (~(|div_count_r)) begin // == 0
-        div_valid_o <= 1'b1;
-        div_proc_o  <= 1'b0;
-      end
-      else
-        div_count_r <= div_count_r + {LOG2N2{1'b1}}; // -= 1
-    end
-  end // @clock
-
-endmodule // srt4_fract58
+endmodule // r4div_fract58
 
 
 //---------------//
@@ -330,28 +312,28 @@ module pfpu_marocchino_div
 
   // we use right shifted numerator to guarantee
   // (numerator < denominator) condition
-  srt4_fract58 u_srt4_fract
+  r4div_fract58 u_r4div_fract
   (
     // clock and reset
-    .cpu_clk              (cpu_clk), // SRT4-FRACT
+    .cpu_clk              (cpu_clk), // R4DIV-FRACT
     // pipeline controls
-    .pipeline_flush_i     (pipeline_flush_i), // SRT4-FRACT
-    .div_start_i          (s2_adv), // SRT4-FRACT
-    .div_proc_o           (s2o_proc), // SRT4-FRACT
-    .div_valid_o          (s2o_div_ready), // SRT4-FRACT
+    .pipeline_flush_i     (pipeline_flush_i), // R4DIV-FRACT
+    .div_start_i          (s2_adv), // R4DIV-FRACT
+    .div_proc_o           (s2o_proc), // R4DIV-FRACT
+    .div_valid_o          (s2o_div_ready), // R4DIV-FRACT
     .wb_taking_div_i      (out_adv),
     // force zero result
-    .s1o_opc_0_i          (s1o_opc_0_i), // SRT4-FRACT
-    .s1o_dbz_i            (s1o_dbz_i), // SRT4-FRACT
+    .s1o_opc_0_i          (s1o_opc_0_i), // R4DIV-FRACT
+    .s1o_dbz_i            (s1o_dbz_i), // R4DIV-FRACT
     // numerator and denominator
-    .num_i                ({2'b0,s1o_fract53a_i,3'd0}), // SRT4-FRACT
-    .den_i                ({s1o_fract53b_i,5'd0}), // SRT4-FRACT
+    .num_i                ({2'b0,s1o_fract53a_i,3'd0}), // R4DIV-FRACT
+    .den_i                ({s1o_fract53b_i,5'd0}), // R4DIV-FRACT
     // double / single precision mode selector
-    .s1o_op_fp64_arith_i  (s1o_op_fp64_arith_i), // SRT4-FRACT
+    .s1o_op_fp64_arith_i  (s1o_op_fp64_arith_i), // R4DIV-FRACT
     // outputs
-    .dbz_o                (s2o_dbz), // SRT4-FRACT
-    .rem_o                (s3t_rem58), // SRT4-FRACT
-    .qtnt_o               (s3t_qtnt58) // SRT4-FRACT
+    .dbz_o                (s2o_dbz), // R4DIV-FRACT
+    .rem_o                (s3t_rem58), // R4DIV-FRACT
+    .qtnt_o               (s3t_qtnt58) // R4DIV-FRACT
   );
 
 
