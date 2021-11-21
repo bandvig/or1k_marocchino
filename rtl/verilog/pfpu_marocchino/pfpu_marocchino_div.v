@@ -187,6 +187,8 @@ module r4div_fract58
   // signed digits to tow's complement on the fly converter
   //  # part Q
   reg   [N-1:0] q_r;
+  //  # part QM
+  reg   [N-1:0] qm_r;
   //  # ---
   always @(posedge cpu_clk) begin
     if (div_start_i)
@@ -204,8 +206,6 @@ module r4div_fract58
       endcase
     end
   end // @clock
-  //  # part QM
-  reg   [N-1:0] qm_r;
   //  # ---
   always @(posedge cpu_clk) begin
     if (div_start_i)
