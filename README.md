@@ -6,9 +6,9 @@ This repository contains an OpenRISC 1000 compliant processor IP core.
 The core:
  1) Implements a variant of Tomasulo algorithm
  2) Supports single and double precision floating point instructions
- 3) Has got separate CPU and Wishbone clocks assuming that
-    CPU clock could be great or equal to Wishbone one but they
-    must be aligned
+ 3) Has separate CPU and Wishbone clocks, assuming that the CPU clock 
+    is greater than or equals the Wishbone clock, but they must be 
+    aligned
  4) Supports atomic instructions (load linked / store conditional)
  5) Supports data bus snoop and shadow registers set for multicore systems
 
@@ -60,7 +60,7 @@ In the future we are working on bringing more tests including:
   - softfloat, fpu verification (may not be feasable in CI due to long run times)
   - Resource utilization regression with yosys synth_intel synth_xilinx
   - Formal verification with yosys
-  - Verification that each revision can boot differnt OS's **Linux**, **RTMES**
+  - Verification that each revision can boot differnt OS's **Linux**, **RTEMS**
   - Golden reference `or1ksim` trace comparisons vs verilog model using constrained
     random inputs.
 
