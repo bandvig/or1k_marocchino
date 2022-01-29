@@ -632,12 +632,15 @@ module or1k_marocchino_immu
   reg [VIRT_ADDR_HIT_MSB:0] virt_addr_hit_r;
 
   // check if IMMU's cache miss
-  wire immu_cache_hit = (virt_addr_mux_i[(OPTION_OPERAND_WIDTH-1):24] ==
+  /*wire immu_cache_hit = (virt_addr_mux_i[(OPTION_OPERAND_WIDTH-1):24] ==
                          virt_addr_hit_r[VIRT_ADDR_HIT_MSB:VIRT_ADDR_HIT_16MB_LSB]) &
                         (hit_08Kb_r ? (virt_addr_mux_i[23:13] ==
                                        virt_addr_hit_r[VIRT_ADDR_HIT_16MB_LSB-1:0]) :
                                       hit_16Mb_r) &
-                        (supervisor_mode_c == supervisor_mode_i);
+                        (supervisor_mode_c == supervisor_mode_i);*/
+  // force updating cache by each access (if MMU is enabled) 
+  // to quick fix hangups of Linux build with GLibc based toolchain
+  wire immu_cache_hit = 1'b0;
 
   // IMMU's super-cache FSM
   always @(posedge cpu_clk) begin

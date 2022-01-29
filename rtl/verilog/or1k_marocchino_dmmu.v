@@ -639,12 +639,15 @@ module or1k_marocchino_dmmu
   reg [OPTION_OPERAND_WIDTH-1:0] phys_addr_r;
 
   // check if DMMU's cache miss
-  wire dmmu_cache_hit = (virt_addr_idx_i[(OPTION_OPERAND_WIDTH-1):24] ==
+  /*wire dmmu_cache_hit = (virt_addr_idx_i[(OPTION_OPERAND_WIDTH-1):24] ==
                          virt_addr_hit_r[VIRT_ADDR_HIT_MSB:VIRT_ADDR_HIT_16MB_LSB]) &
                         (hit_08Kb_r ? (virt_addr_idx_i[23:13] ==
                                        virt_addr_hit_r[VIRT_ADDR_HIT_16MB_LSB-1:0]) :
                                       hit_16Mb_r) &
-                        (supervisor_mode_c == supervisor_mode_i);
+                        (supervisor_mode_c == supervisor_mode_i);*/
+  // force updating cache by each access (if MMU is enabled) 
+  // to quick fix hangups of Linux build with GLibc based toolchain
+  wire dmmu_cache_hit = 1'b0; 
 
   // do update only if LSU operation is valid
   wire dmmu_s1o_valid = (~s1o_op_msync_i);
