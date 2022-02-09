@@ -55,7 +55,7 @@ module or1k_marocchino_dcache
 
   // Regular operation
   //  # addresses and "DCACHE inhibit" flag
-  input      [OPTION_OPERAND_WIDTH-1:0] virt_addr_idx_i,
+  input      [OPTION_OPERAND_WIDTH-1:0] virt_addr_s1t_i,
   input      [OPTION_OPERAND_WIDTH-1:0] virt_addr_s1o_i,
   input      [OPTION_OPERAND_WIDTH-1:0] virt_addr_s2o_i,
   input      [OPTION_OPERAND_WIDTH-1:0] phys_addr_s2t_i,
@@ -687,7 +687,7 @@ module or1k_marocchino_dcache
 
   // WAY_RE_ADDR
   assign way_rindex = lsu_s1_adv_i ?
-                        virt_addr_idx_i[WAY_WIDTH-1:2] : // WAY_RE_ADDR if advance stage #1
+                        virt_addr_s1t_i[WAY_WIDTH-1:2] : // WAY_RE_ADDR if advance stage #1
                         virt_addr_s1o_i[WAY_WIDTH-1:2];  // WAY_RE_ADDR at re-fill / write-hit
 
   // Controls for read/write port.
@@ -779,7 +779,7 @@ module or1k_marocchino_dcache
 
   // TAG_RE_ADDR
   assign tag_rindex = lsu_s1_adv_i ?
-                        virt_addr_idx_i[WAY_WIDTH-1:OPTION_DCACHE_BLOCK_WIDTH] : // TAG_RE_ADDR if advance stage #1
+                        virt_addr_s1t_i[WAY_WIDTH-1:OPTION_DCACHE_BLOCK_WIDTH] : // TAG_RE_ADDR if advance stage #1
                         virt_addr_s1o_i[WAY_WIDTH-1:OPTION_DCACHE_BLOCK_WIDTH];  // TAG_RE_ADDR if stall   stage #1
 
   // Read/Write port (*_rwp_*) controls
