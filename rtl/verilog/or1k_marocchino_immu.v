@@ -128,6 +128,15 @@ module or1k_marocchino_immu
   // uxe: user execute enable
   reg                              sxe;
   reg                              uxe;
+  reg   [OPTION_OPERAND_WIDTH-1:0] phys_addr;
+  reg                              cache_inhibit;
+  reg                              tlb_miss;
+
+  // localy cached data to increase achevable cpu-clock
+  reg                             immu_enable_c;
+  reg                             supervisor_mode_c;
+  reg  [OPTION_OPERAND_WIDTH-1:0] virt_addr_tag_c;
+
 
   genvar                           i;
   integer                          j;
@@ -259,30 +268,26 @@ module or1k_marocchino_immu
   end // @ clock
 
 
-  // TAG virtual address (driven by IMMU's super-cache controller)
-  reg  [OPTION_OPERAND_WIDTH-1:0] virt_addr_tag_r;
+  //----------------------//
+  // IMMU Record Analysis //
+  //----------------------//
 
-
-  // Calculate IMMU's output for super-cache
   generate
   for (i = 0; i < OPTION_IMMU_WAYS; i=i+1) begin : ways
     // 8KB page hit
-    assign way_hit[i] = (itlb_match_dout[i][31:13] == virt_addr_tag_r[31:13]) & // address hit
+    assign way_hit[i] = (itlb_match_dout[i][31:13] == virt_addr_tag_c[31:13]) & // address hit
                         ~(&itlb_match_huge_dout[i][1:0]) &                      // not valid huge
-                        itlb_match_dout[i][0];                                  // valid bit
+                        itlb_match_dout[i][0] & immu_enable_c;                  // valid bit & IMMU-enable
     // Huge page hit
-    assign way_huge_hit[i] = (itlb_match_huge_dout[i][31:24] == virt_addr_tag_r[31:24]) & // address hit
-                             itlb_match_huge_dout[i][1] & itlb_match_huge_dout[i][0];     // valid huge
+    assign way_huge_hit[i] = (itlb_match_huge_dout[i][31:24] == virt_addr_tag_c[31:24]) & // address hit
+                             (&itlb_match_huge_dout[i][1:0]) & immu_enable_c;             // valid huge & IMMU-enable
   end
   endgenerate
 
-  reg [OPTION_OPERAND_WIDTH-1:0] phys_addr;
-  reg                            cache_inhibit;
-  reg                            tlb_miss;
 
   always @(*) begin
-    tlb_miss        = (~tlb_reload_pagefault); // initially "miss"
-    phys_addr       = virt_addr_tag_r;
+    tlb_miss        = immu_enable_c;
+    phys_addr       = virt_addr_tag_c;
     sxe             = 1'b0;
     uxe             = 1'b0;
     cache_inhibit   = 1'b0;
@@ -292,13 +297,13 @@ module or1k_marocchino_immu
         tlb_miss = 1'b0;
 
       if (way_huge_hit[j]) begin
-        phys_addr       = {itlb_trans_huge_dout[j][31:24], virt_addr_tag_r[23:0]};
+        phys_addr       = {itlb_trans_huge_dout[j][31:24], virt_addr_tag_c[23:0]};
         sxe             = itlb_trans_huge_dout[j][6];
         uxe             = itlb_trans_huge_dout[j][7];
         cache_inhibit   = itlb_trans_huge_dout[j][1];
       end
       else if (way_hit[j])begin
-        phys_addr       = {itlb_trans_dout[j][31:13], virt_addr_tag_r[12:0]};
+        phys_addr       = {itlb_trans_dout[j][31:13], virt_addr_tag_c[12:0]};
         sxe             = itlb_trans_dout[j][6];
         uxe             = itlb_trans_dout[j][7];
         cache_inhibit   = itlb_trans_dout[j][1];
@@ -318,8 +323,31 @@ module or1k_marocchino_immu
     end // loop by ways
   end
 
-  wire pagefault = (supervisor_mode_i ? ~sxe : ~uxe) & (~tlb_reload_busy_o);
+  // Extension to cache_inhibit
+  //   Work around IMMU just for symmetric with DMMU?
+  wire cache_inhibit_limit_immu_off; // state: OFF
+  wire cache_inhibit_limit_immu_upd; // state: UPDATE
+  // ---
+  generate
+  if (OPTION_ICACHE_LIMIT_WIDTH < OPTION_OPERAND_WIDTH) begin
+    assign cache_inhibit_limit_immu_off =
+      (virt_addr_mux_i[OPTION_OPERAND_WIDTH-1:OPTION_ICACHE_LIMIT_WIDTH] != 0);
+    assign cache_inhibit_limit_immu_upd =
+      (phys_addr[OPTION_OPERAND_WIDTH-1:OPTION_ICACHE_LIMIT_WIDTH] != 0);
+  end
+  else begin
+    assign cache_inhibit_limit_immu_off = 1'b0;
+    assign cache_inhibit_limit_immu_upd = 1'b0;
+  end
+  endgenerate
 
+  // page fault detection
+  wire pagefault = (supervisor_mode_c ? ~sxe : ~uxe) & immu_enable_c;
+
+
+  //------------------------------//
+  // IMMU Record Storage Controls //
+  //------------------------------//
 
   // match 8KB input address
   //  a) SPR BUS read/write access
@@ -424,7 +452,7 @@ module or1k_marocchino_immu
           tlb_reload_req_r  <= 1'b0;
           if (do_reload) begin
             tlb_reload_req_r  <= 1'b1;
-            tlb_reload_addr_r <= {immucr[31:10],virt_addr_tag_r[31:24],2'b00};
+            tlb_reload_addr_r <= {immucr[31:10],virt_addr_tag_c[31:24],2'b00};
             tlb_reload_state  <= TLB_GET_PTE_POINTER;
           end
         end // tlb reload idle
@@ -451,7 +479,7 @@ module or1k_marocchino_immu
               tlb_reload_state  <= TLB_GET_PTE;
             end
             else begin
-              tlb_reload_addr_r <= {tlb_reload_data_i[31:13],virt_addr_tag_r[23:13],2'b00};
+              tlb_reload_addr_r <= {tlb_reload_data_i[31:13],virt_addr_tag_c[23:13],2'b00};
               tlb_reload_state  <= TLB_GET_PTE;
             end
           end
@@ -484,7 +512,7 @@ module or1k_marocchino_immu
 
               // Match register generation.
               // VPN
-              itlb_match_reload_din_r[31:13] <= virt_addr_tag_r[31:13];
+              itlb_match_reload_din_r[31:13] <= virt_addr_tag_c[31:13];
               // PL1
               itlb_match_reload_din_r[1] <= tlb_reload_huge_r;
               // Valid
@@ -583,28 +611,9 @@ module or1k_marocchino_immu
   endgenerate
 
 
-  // Extension to cache_inhibit
-  //   Work around IMMU just for symmetric with DMMU?
-  wire cache_inhibit_limit_immu_off; // state: OFF
-  wire cache_inhibit_limit_immu_uon; // state: UPDATE & DMMU is ON
-  wire cache_inhibit_limit_immu_uof; // state: UPDATE & DMMU is OFF
-  // ---
-  generate
-  if (OPTION_ICACHE_LIMIT_WIDTH < OPTION_OPERAND_WIDTH) begin
-    assign cache_inhibit_limit_immu_off =
-      (virt_addr_mux_i[OPTION_OPERAND_WIDTH-1:OPTION_ICACHE_LIMIT_WIDTH] != 0);
-    assign cache_inhibit_limit_immu_uon =
-      (phys_addr[OPTION_OPERAND_WIDTH-1:OPTION_ICACHE_LIMIT_WIDTH] != 0);
-    assign cache_inhibit_limit_immu_uof =
-      (virt_addr_s1o_i[OPTION_OPERAND_WIDTH-1:OPTION_ICACHE_LIMIT_WIDTH] != 0);
-  end
-  else begin
-    assign cache_inhibit_limit_immu_off = 1'b0;
-    assign cache_inhibit_limit_immu_uon = 1'b0;
-    assign cache_inhibit_limit_immu_uof = 1'b0;
-  end
-  endgenerate
-
+  //------------------//
+  // IMMU Super Cache //
+  //------------------//
 
   // states of IMMU super-cache FSM
   localparam [4:0] IMMU_CACHE_EMPTY = 5'b00001,
@@ -620,40 +629,28 @@ module or1k_marocchino_immu
   wire   immu_cache_upd = immu_cache_state[3];
 
   // additional flags
-  reg supervisor_mode_c; // "cached"
   reg hit_08Kb_r;
-  reg hit_16Mb_r; // "huge"
-
-  // most significant bits of last hit virtual address
-  localparam  VIRT_ADDR_HIT_WIDTH    = OPTION_OPERAND_WIDTH - 13;
-  localparam  VIRT_ADDR_HIT_MSB      = VIRT_ADDR_HIT_WIDTH  -  1;
-  localparam  VIRT_ADDR_HIT_16MB_LSB = 24 - 13;
-  // ---
-  reg [VIRT_ADDR_HIT_MSB:0] virt_addr_hit_r;
 
   // check if IMMU's cache miss
-  wire immu_cache_hit = (virt_addr_mux_i[(OPTION_OPERAND_WIDTH-1):24] ==
-                         virt_addr_hit_r[VIRT_ADDR_HIT_MSB:VIRT_ADDR_HIT_16MB_LSB]) &
-                        (hit_08Kb_r ? (virt_addr_mux_i[23:13] ==
-                                       virt_addr_hit_r[VIRT_ADDR_HIT_16MB_LSB-1:0]) :
-                                      hit_16Mb_r) &
-                        (supervisor_mode_c == supervisor_mode_i);
+  wire immu_cache_miss = (supervisor_mode_c ^ supervisor_mode_i) |
+    (immu_enable_c ^ immu_enable_i) |
+    (virt_addr_mux_i[(OPTION_OPERAND_WIDTH-1):13] != 
+     virt_addr_tag_c[(OPTION_OPERAND_WIDTH-1):13]);
 
   // IMMU's super-cache FSM
   always @(posedge cpu_clk) begin
     if (pipeline_flush_i) begin
-      s1o_immu_upd_o    <= 1'b0;
-      s1o_immu_rdy_o    <= 1'b0;
-      supervisor_mode_c <= 1'b0;
-      hit_08Kb_r        <= 1'b0;
-      hit_16Mb_r        <= 1'b0;
-      cache_inhibit_o   <= 1'b0;
-      tlb_miss_o        <= 1'b0;
-      pagefault_o       <= 1'b0;
-      immu_cache_state  <= IMMU_CACHE_EMPTY; // reset / flush / predict-miss
+      s1o_immu_upd_o    <= 1'b0; // reset / flush
+      s1o_immu_rdy_o    <= 1'b0; // reset / flush
+      immu_enable_c     <= 1'b0; // reset / flush
+      supervisor_mode_c <= 1'b0; // reset / flush
+      hit_08Kb_r        <= 1'b0; // reset / flush
+      cache_inhibit_o   <= 1'b0; // reset / flush
+      tlb_miss_o        <= 1'b0; // reset / flush
+      pagefault_o       <= 1'b0; // reset / flush
+      immu_cache_state  <= IMMU_CACHE_EMPTY; // reset / flush
     end
     else begin
-      (* parallel_case *)
       case (immu_cache_state)
         // waiting 1-st request after reset / flush / predict-miss
         IMMU_CACHE_EMPTY: begin
@@ -671,6 +668,8 @@ module or1k_marocchino_immu
           else begin
             immu_cache_state <= IMMU_CACHE_UPD;
           end
+          immu_enable_c     <= immu_enable_i; // read RAMs
+          supervisor_mode_c <= supervisor_mode_i; // read RAMs
         end // read
         // update cache output
         IMMU_CACHE_UPD: begin
@@ -679,26 +678,13 @@ module or1k_marocchino_immu
             immu_cache_state <= IMMU_CACHE_EMPTY;
           end
           else begin
-            if (immu_enable_i) begin
-              supervisor_mode_c <= supervisor_mode_i;
-              hit_08Kb_r        <= (|way_hit);
-              hit_16Mb_r        <= (|way_huge_hit);
-              cache_inhibit_o   <= cache_inhibit | cache_inhibit_limit_immu_uon; // UPD, IMMU-ON
-              tlb_miss_o        <= tlb_miss;
-              pagefault_o       <= pagefault;
-              immu_cache_state  <= IMMU_CACHE_ON;
-            end
-            else begin
-              supervisor_mode_c <= 1'b0;
-              hit_08Kb_r        <= 1'b0;
-              hit_16Mb_r        <= 1'b0;
-              cache_inhibit_o   <= cache_inhibit_limit_immu_uof;// UPD, IMMU-OFF
-              tlb_miss_o        <= 1'b0;
-              pagefault_o       <= 1'b0;
-              immu_cache_state  <= IMMU_CACHE_OFF;
-            end
-            s1o_immu_upd_o <= 1'b0;
-            s1o_immu_rdy_o <= 1'b1;
+            hit_08Kb_r        <= (|way_hit);
+            cache_inhibit_o   <= cache_inhibit | cache_inhibit_limit_immu_upd;
+            tlb_miss_o        <= tlb_miss;
+            pagefault_o       <= pagefault;
+            s1o_immu_upd_o    <= 1'b0;
+            s1o_immu_rdy_o    <= 1'b1;
+            immu_cache_state  <= immu_enable_c ? IMMU_CACHE_ON : IMMU_CACHE_OFF;
           end
         end // update
         // IMMU is ON
@@ -707,7 +693,7 @@ module or1k_marocchino_immu
             if (jr_gathering_target_i) begin
               s1o_immu_rdy_o <= 1'b0;
             end
-            else if (~immu_cache_hit) begin
+            else if (immu_cache_miss) begin
               s1o_immu_upd_o   <= 1'b1;
               s1o_immu_rdy_o   <= 1'b0;
               immu_cache_state <= IMMU_CACHE_RE;
@@ -720,8 +706,8 @@ module or1k_marocchino_immu
             s1o_immu_rdy_o   <= 1'b0;
           end
           else if (spr_bus_ack_o | (~immu_enable_i)) begin // IMMU is ON
-            s1o_immu_upd_o   <= s1o_immu_rdy_o;
-            s1o_immu_rdy_o   <= 1'b0;
+            s1o_immu_upd_o   <= s1o_immu_rdy_o; // after SPR access / ON -> OFF
+            s1o_immu_rdy_o   <= 1'b0; // after SPR access / ON -> OFF
             immu_cache_state <= s1o_immu_rdy_o ? IMMU_CACHE_RE : IMMU_CACHE_EMPTY; // after SPR access / ON -> OFF
           end // Re-Read after SPR access
         end // rdy
@@ -740,8 +726,8 @@ module or1k_marocchino_immu
             s1o_immu_rdy_o <= 1'b0;
           end
           else if (immu_enable_i) begin // OFF -> ON
-            s1o_immu_upd_o   <= s1o_immu_rdy_o;
-            s1o_immu_rdy_o   <= 1'b0;
+            s1o_immu_upd_o   <= s1o_immu_rdy_o; // OFF -> ON
+            s1o_immu_rdy_o   <= 1'b0; // OFF -> ON
             immu_cache_state <= s1o_immu_rdy_o ? IMMU_CACHE_RE : IMMU_CACHE_EMPTY; // OFF -> ON
           end
         end // off
@@ -754,22 +740,15 @@ module or1k_marocchino_immu
   // Registering virtual address TAG
   always @(posedge cpu_clk) begin
     if (immu_cache_re)
-      virt_addr_tag_r <= virt_addr_s1o_i;
-  end // @ clock
-
-  // IMMU's super-cache hit-address
-  always @(posedge cpu_clk) begin
-    if (immu_cache_upd)
-      virt_addr_hit_r <= virt_addr_tag_r[(OPTION_OPERAND_WIDTH-1):13];
+      virt_addr_tag_c <= virt_addr_s1o_i;
   end // @ clock
 
   // IMMU's physical address output
   always @(posedge cpu_clk) begin
-    (* parallel_case *)
     case (immu_cache_state)
       // update cache output
       IMMU_CACHE_UPD: begin
-        phys_addr_o <= immu_enable_i ? phys_addr : virt_addr_tag_r; // update IMMU's output
+        phys_addr_o <= phys_addr;
       end // update
       // IMMU is ON
       IMMU_CACHE_ON: begin

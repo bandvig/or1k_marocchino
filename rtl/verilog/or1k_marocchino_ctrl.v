@@ -714,7 +714,7 @@ module or1k_marocchino_ctrl
   assign except_fpu_enable_o = spr_fpcsr[`OR1K_FPCSR_FPEE];
 
   wire spr_fpcsr_we = (`SPR_OFFSET(({1'b0, spr_sys_group_wadr_r})) == `SPR_OFFSET(`OR1K_SPR_FPCSR_ADDR)) &
-                      spr_sys_group_we &  spr_sr[`OR1K_SPR_SR_SM];
+                      spr_sys_group_we; // FPCSR is R/W for both user- and supervisor- modes
 
  `ifdef OR1K_FPCSR_MASK_FLAGS
   reg [`OR1K_FPCSR_ALLF_SIZE-1:0] ctrl_fpu_mask_flags_r;

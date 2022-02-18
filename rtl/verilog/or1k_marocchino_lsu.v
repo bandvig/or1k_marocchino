@@ -461,11 +461,13 @@ module or1k_marocchino_lsu
     // configuration and commands
     .dmmu_enable_i                    (dmmu_enable_i), // DMMU
     .supervisor_mode_i                (supervisor_mode_i), // DMMU
+    .exec_op_lsu_store_i              (exec_op_lsu_store_i), // DMMU
+    .exec_op_lsu_load_i               (exec_op_lsu_load_i), // DMMU
     .s1o_op_lsu_store_i               (s1o_op_lsu_store), // DMMU
     .s1o_op_lsu_load_i                (s1o_op_lsu_load), // DMMU
     .s1o_op_msync_i                   (s1o_op_msync), // DMMU
     // address translation
-    .virt_addr_idx_i                  (s1t_virt_addr), // DMMU
+    .virt_addr_s1t_i                  (s1t_virt_addr), // DMMU
     .virt_addr_s1o_i                  (s1o_virt_addr), // DMMU
     .phys_addr_o                      (s2t_phys_addr), // DMMU
     // translation flags
@@ -534,7 +536,7 @@ module or1k_marocchino_lsu
     .dbus_err_i                 (dbus_err_i), // DCACHE
     // Regular operation
     //  # addresses and "DCHACHE inhibit" flag
-    .virt_addr_idx_i            (s1t_virt_addr), // DCACHE
+    .virt_addr_s1t_i            (s1t_virt_addr), // DCACHE
     .virt_addr_s1o_i            (s1o_virt_addr), // DCACHE
     .virt_addr_s2o_i            (s2o_virt_addr), // DCACHE
     .phys_addr_s2t_i            (s2t_phys_addr), // DCACHE
